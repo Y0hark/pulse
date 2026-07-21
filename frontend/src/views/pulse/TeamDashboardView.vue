@@ -37,6 +37,7 @@ onUnmounted(() => {
             {{ aggregate.submissionStatus.pending.length }} pending
           </p>
           <router-link :to="`/periods/${store.period.id}/snapshot`">Freeze / view snapshot</router-link>
+          <router-link :to="{ path: '/walkthrough', query: { period: store.period.isoWeek } }">Walkthrough</router-link>
         </div>
       </header>
 

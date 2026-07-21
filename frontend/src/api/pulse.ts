@@ -192,4 +192,26 @@ export function getPeriodSnapshot(team: string, periodId: number): Promise<Snaps
   return request(`/teams/${team}/periods/${periodId}/snapshot`);
 }
 
+export type WalkthroughStatus = 'submitted' | 'not_submitted';
+
+export interface WalkthroughEntry {
+  user: { id: string; displayName: string | null };
+  profile: { code: string | null; label: string | null };
+  status: WalkthroughStatus;
+  workload: number | null;
+  deliveredCnt: number | null;
+  inflightCnt: number | null;
+  reportId: string | null;
+}
+
+export interface WalkthroughResponse {
+  period: ReportPeriod;
+  entries: WalkthroughEntry[];
+}
+
+export function getTeamWalkthrough(team: string, isoWeek?: string): Promise<WalkthroughResponse> {
+  const query = isoWeek ? `?period=${encodeURIComponent(isoWeek)}` : '';
+  return request(`/teams/${team}/reports${query}`);
+}
+
 export { ApiError };

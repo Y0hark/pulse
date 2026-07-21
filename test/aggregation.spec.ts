@@ -8,6 +8,7 @@ function member(userId: string, profileCode: string | null, displayName: string 
 
 function report(overrides: Partial<TeamReportInput> & { userId: string }): TeamReportInput {
   return {
+    id: `report-${overrides.userId}`,
     workload: 0,
     deliveredCnt: 0,
     inflightCnt: 0,

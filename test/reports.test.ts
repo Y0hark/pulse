@@ -194,6 +194,64 @@ describe('GET /teams/:team/reports/:reportId', () => {
   });
 });
 
+describe('GET /teams/:team/reports (walkthrough list)', () => {
+  async function setupWithTwoMembers() {
+    const db = new FakeDb();
+    db.seedUser('fake-user-1', 'owner@example.com', 'Owner Person', 'pm');
+    db.seedUser('fake-user-2', 'other@example.com', 'Other Person', 'ba');
+    const team = db.seedTeam('ceva-logistics');
+    db.addMember(team.id, 'fake-user-1');
+    db.addMember(team.id, 'fake-user-2');
+    const period = db.seedPeriod('2026-W29', '2026-07-13', '2026-07-20');
+
+    const authProvider = new FakeAuthProvider();
+    const app = createApp({ authProvider, db });
+    await request(app).get('/auth/callback?token=valid-token').expect(302);
+
+    return { db, team, period, app };
+  }
+
+  it('404s when the caller is not a member of the team', async () => {
+    const { app } = await setupWithTwoMembers();
+    await request(app).get('/teams/some-other-team/reports').expect(403);
+  });
+
+  it('lists every roster member as not_submitted when nobody has filed a report', async () => {
+    const { app, period } = await setupWithTwoMembers();
+    const res = await request(app).get(`/teams/ceva-logistics/reports?period=${period.iso_week}`).expect(200);
+
+    expect(res.body.period.isoWeek).toBe('2026-W29');
+    expect(res.body.entries).toHaveLength(2);
+    expect(res.body.entries.every((e: { status: string }) => e.status === 'not_submitted')).toBe(true);
+    expect(res.body.entries.every((e: { reportId: null }) => e.reportId === null)).toBe(true);
+  });
+
+  it('moves a member to submitted, with their reportId, once they submit; pending stays last', async () => {
+    const { app, period } = await setupWithTwoMembers();
+    const payload = {
+      workload: 65,
+      deliveredCnt: 3,
+      inflightCnt: 1,
+      projectCards: [],
+      majorTasksDid: [],
+      majorTasksToDo: [],
+      alerts: [],
+      opportunities: [],
+    };
+
+    await request(app).put(`/teams/ceva-logistics/reports/mine?period=${period.iso_week}`).send(payload).expect(200);
+    await request(app).post(`/teams/ceva-logistics/reports/mine/submit?period=${period.iso_week}`).expect(200);
+
+    const res = await request(app).get(`/teams/ceva-logistics/reports?period=${period.iso_week}`).expect(200);
+
+    expect(res.body.entries.map((e: { status: string }) => e.status)).toEqual(['submitted', 'not_submitted']);
+    expect(res.body.entries[0].user.id).toBe('fake-user-1');
+    expect(res.body.entries[0].reportId).toBeTruthy();
+    expect(res.body.entries[0].workload).toBe(65);
+    expect(res.body.entries[1].reportId).toBeNull();
+  });
+});
+
 describe('prefill from a previous week', () => {
   it('clones project cards and to-dos, and resets weekly counters', async () => {
     // Periods must be seeded in chronological order: period_id ordering (like a real SERIAL

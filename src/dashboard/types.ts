@@ -53,6 +53,7 @@ export interface RosterMember {
 
 /** A team member's report row for the period, flattened with its child rows for aggregation. */
 export interface TeamReportInput {
+  id: string;
   userId: string;
   workload: number;
   deliveredCnt: number;
@@ -61,6 +62,19 @@ export interface TeamReportInput {
   projectCardStatuses: ProjectStatus[];
   alerts: { content: string; severity: AlertSeverity }[];
   opportunities: Opportunity[];
+}
+
+export type WalkthroughStatus = 'submitted' | 'not_submitted';
+
+/** One row of the team walkthrough: read-only presenter-mode listing of a period's reports. */
+export interface WalkthroughEntry {
+  user: { id: string; displayName: string | null };
+  profile: { code: string | null; label: string | null };
+  status: WalkthroughStatus;
+  workload: number | null;
+  deliveredCnt: number | null;
+  inflightCnt: number | null;
+  reportId: string | null;
 }
 
 /** The immutable payload persisted at freeze time — the same shape as a live dashboard aggregate. */

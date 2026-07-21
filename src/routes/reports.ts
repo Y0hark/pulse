@@ -14,6 +14,7 @@ import {
 import { getUserById } from '../db/users.js';
 import { buildDraftFromPrevious } from '../services/prefill.js';
 import { invalidateTeamDashboard } from '../services/aggregation.js';
+import { getTeamWalkthrough } from '../services/walkthrough.js';
 import type { ReportWritePayload } from '../reports/types.js';
 
 async function resolvePeriod(db: Queryable, isoWeek: unknown) {
@@ -56,6 +57,17 @@ export function createReportsRouter(db: Queryable): Router {
     const draft = existing ?? (await buildDraftFromPrevious(await getPreviousReport(db, req.userId!, req.teamId!, period.id)));
 
     res.status(200).json({ period, status, draft });
+  });
+
+  router.get('/teams/:team/reports', async (req, res) => {
+    const period = await resolvePeriod(db, req.query.period);
+    if (!period) {
+      res.status(404).json({ error: 'period_not_found' });
+      return;
+    }
+
+    const entries = await getTeamWalkthrough(db, req.teamId!, period.id);
+    res.status(200).json({ period, entries });
   });
 
   router.get('/teams/:team/reports/mine', async (req, res) => {

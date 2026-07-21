@@ -42,6 +42,7 @@ export async function getTeamReportsForPeriod(
   ]);
 
   return reportsResult.rows.map((r: any) => ({
+    id: r.id,
     userId: r.user_id,
     workload: r.workload,
     deliveredCnt: r.delivered_cnt,

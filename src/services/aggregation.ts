@@ -1,5 +1,6 @@
 import type { Queryable } from '../db/pool.js';
 import { getTeamReportsForPeriod, getTeamRoster } from '../db/dashboard.js';
+import { PROFILE_DEFS } from '../dashboard/profiles.js';
 import type { AlertSeverity } from '../reports/types.js';
 import type {
   DashboardAggregate,
@@ -9,15 +10,6 @@ import type {
   TeamReportInput,
   WorkloadBucket,
 } from '../dashboard/types.js';
-
-const PROFILE_DEFS: { code: string; label: string }[] = [
-  { code: 'ba', label: 'BA' },
-  { code: 'po', label: 'PO' },
-  { code: 'pm', label: 'PM' },
-  { code: 'manager', label: 'Manager' },
-  { code: 'consultant', label: 'Consultant' },
-  { code: 'other', label: 'Other' },
-];
 
 const SEVERITY_ORDER: Record<AlertSeverity, number> = { critical: 0, warn: 1, info: 2 };
 
