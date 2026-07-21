@@ -21,6 +21,10 @@ interface UserRow {
 interface TeamRow {
   id: string;
   slug: string;
+  timezone: string;
+  freeze_dow: number;
+  freeze_time: string;
+  freeze_mode: string;
 }
 
 interface TeamMemberRow {
@@ -40,6 +44,13 @@ interface TeamPeriodStatusRow {
   team_id: string;
   period_id: number;
   status: string;
+}
+
+interface PeriodSnapshotRow {
+  team_id: string;
+  period_id: number;
+  payload: unknown;
+  frozen_at: Date;
 }
 
 interface ReportRow {
@@ -90,6 +101,7 @@ export class FakeDb implements Queryable {
   readonly teamMembers: TeamMemberRow[] = [];
   readonly periods: PeriodRow[] = [];
   readonly teamPeriodStatus: TeamPeriodStatusRow[] = [];
+  readonly periodSnapshots: PeriodSnapshotRow[] = [];
   readonly reports: ReportRow[] = [];
   readonly projectCards: ProjectCardRow[] = [];
   readonly reportItems: ReportItemRow[] = [];
@@ -97,8 +109,18 @@ export class FakeDb implements Queryable {
 
   // --- test-only seed helpers (not SQL-backed) ---
 
-  seedTeam(slug: string): TeamRow {
-    const row = { id: randomUUID(), slug };
+  seedTeam(
+    slug: string,
+    freezeConfig: { timezone?: string; freezeDow?: number; freezeTime?: string; freezeMode?: string } = {},
+  ): TeamRow {
+    const row = {
+      id: randomUUID(),
+      slug,
+      timezone: freezeConfig.timezone ?? 'Europe/Paris',
+      freeze_dow: freezeConfig.freezeDow ?? 2,
+      freeze_time: freezeConfig.freezeTime ?? '09:30',
+      freeze_mode: freezeConfig.freezeMode ?? 'both',
+    };
     this.teams.push(row);
     return row;
   }
@@ -377,6 +399,37 @@ export class FakeDb implements Queryable {
       const [reportId, type, content] = params as [string, string, string];
       this.opportunities.push({ id: randomUUID(), report_id: reportId, type, content });
       return { rows: [] };
+    }
+
+    if (sql.startsWith('SELECT id, slug, timezone, freeze_dow, freeze_time, freeze_mode FROM teams')) {
+      const rows = this.teams.filter((t) => t.freeze_mode === 'auto' || t.freeze_mode === 'both');
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT p.id, p.iso_week, p.starts_on, p.ends_on')) {
+      const [teamId, before] = params as [string, Date];
+      const frozenPeriodIds = new Set(
+        this.teamPeriodStatus.filter((s) => s.team_id === teamId && s.status === 'frozen').map((s) => s.period_id),
+      );
+      const rows = this.periods
+        .filter((p) => new Date(p.ends_on).getTime() <= before.getTime() && !frozenPeriodIds.has(p.id))
+        .sort((a, b) => (a.ends_on < b.ends_on ? -1 : 1));
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT team_id, period_id, payload, frozen_at FROM period_snapshots')) {
+      const [teamId, periodId] = params as [string, number];
+      const row = this.periodSnapshots.find((s) => s.team_id === teamId && s.period_id === periodId);
+      return { rows: row ? [row] : [] };
+    }
+
+    if (sql.startsWith('INSERT INTO period_snapshots')) {
+      const [teamId, periodId, payload] = params as [string, number, string];
+      const existing = this.periodSnapshots.find((s) => s.team_id === teamId && s.period_id === periodId);
+      if (existing) return { rows: [] };
+      const row = { team_id: teamId, period_id: periodId, payload, frozen_at: new Date() };
+      this.periodSnapshots.push(row);
+      return { rows: [row] };
     }
 
     if (sql.startsWith('UPDATE reports SET submitted_at')) {

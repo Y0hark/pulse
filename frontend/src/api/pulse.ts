@@ -172,4 +172,24 @@ export function getTeamDashboard(team: string, isoWeek?: string): Promise<Dashbo
   return request(`/teams/${team}/dashboard${query}`);
 }
 
+export interface PeriodSnapshot {
+  teamId: string;
+  periodId: number;
+  payload: DashboardAggregate;
+  frozenAt: string;
+}
+
+export interface SnapshotResponse {
+  period: ReportPeriod;
+  snapshot: PeriodSnapshot;
+}
+
+export function freezePeriod(team: string, periodId: number): Promise<SnapshotResponse> {
+  return request(`/teams/${team}/periods/${periodId}/freeze`, { method: 'POST' });
+}
+
+export function getPeriodSnapshot(team: string, periodId: number): Promise<SnapshotResponse> {
+  return request(`/teams/${team}/periods/${periodId}/snapshot`);
+}
+
 export { ApiError };

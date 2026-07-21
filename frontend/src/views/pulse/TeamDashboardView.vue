@@ -31,10 +31,13 @@ onUnmounted(() => {
     <template v-else-if="aggregate && store.period">
       <header class="team-dashboard__header">
         <h1>Team dashboard — {{ store.period.isoWeek }}</h1>
-        <p class="team-dashboard__submission">
-          {{ aggregate.submissionStatus.submitted.length }} submitted ·
-          {{ aggregate.submissionStatus.pending.length }} pending
-        </p>
+        <div class="team-dashboard__header-right">
+          <p class="team-dashboard__submission">
+            {{ aggregate.submissionStatus.submitted.length }} submitted ·
+            {{ aggregate.submissionStatus.pending.length }} pending
+          </p>
+          <router-link :to="`/periods/${store.period.id}/snapshot`">Freeze / view snapshot</router-link>
+        </div>
       </header>
 
       <section class="team-dashboard__workload">
@@ -109,6 +112,12 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+}
+.team-dashboard__header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
 }
 .team-dashboard__submission {
   color: #666;

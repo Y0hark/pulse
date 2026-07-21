@@ -8,6 +8,7 @@ import type {
   ReportRecord,
   ReportWritePayload,
 } from '../reports/types.js';
+import type { DashboardAggregate, PeriodSnapshot } from '../dashboard/types.js';
 
 export async function getCurrentPeriod(db: Queryable): Promise<ReportPeriod | null> {
   const result = await db.query(
@@ -58,6 +59,60 @@ export async function setTeamPeriodStatus(
        frozen_at = EXCLUDED.frozen_at`,
     [teamId, periodId, status],
   );
+}
+
+/** Periods that have already ended (ends_on <= before) but aren't yet frozen for this team —
+ * i.e. candidates the scheduled auto-freeze job still needs to check. */
+export async function getUnfrozenEndedPeriods(db: Queryable, teamId: string, before: Date): Promise<ReportPeriod[]> {
+  const result = await db.query(
+    `SELECT p.id, p.iso_week, p.starts_on, p.ends_on
+     FROM report_periods p
+     LEFT JOIN team_period_status s ON s.team_id = $1 AND s.period_id = p.id
+     WHERE p.ends_on <= $2 AND (s.status IS NULL OR s.status != 'frozen')
+     ORDER BY p.ends_on ASC`,
+    [teamId, before],
+  );
+  return result.rows.map(toPeriod);
+}
+
+export async function getPeriodSnapshot(db: Queryable, teamId: string, periodId: number): Promise<PeriodSnapshot | null> {
+  const result = await db.query(
+    `SELECT team_id, period_id, payload, frozen_at FROM period_snapshots WHERE team_id = $1 AND period_id = $2`,
+    [teamId, periodId],
+  );
+  if (result.rows.length === 0) return null;
+  return toSnapshot(result.rows[0]);
+}
+
+/** Insert-only, keyed by (team_id, period_id): if another call already froze this period, the
+ * conflict is a no-op and the existing (first-writer) snapshot is returned instead. This is what
+ * makes freezing idempotent under concurrent requests without needing a transaction. */
+export async function insertPeriodSnapshotIfAbsent(
+  db: Queryable,
+  teamId: string,
+  periodId: number,
+  payload: DashboardAggregate,
+): Promise<PeriodSnapshot> {
+  const inserted = await db.query(
+    `INSERT INTO period_snapshots (team_id, period_id, payload)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (team_id, period_id) DO NOTHING
+     RETURNING team_id, period_id, payload, frozen_at`,
+    [teamId, periodId, JSON.stringify(payload)],
+  );
+  if (inserted.rows.length > 0) return toSnapshot(inserted.rows[0]);
+
+  const existing = await getPeriodSnapshot(db, teamId, periodId);
+  return existing!;
+}
+
+function toSnapshot(row: any): PeriodSnapshot {
+  return {
+    teamId: row.team_id,
+    periodId: row.period_id,
+    payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload,
+    frozenAt: row.frozen_at,
+  };
 }
 
 export async function getReportForPeriod(

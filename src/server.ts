@@ -4,6 +4,18 @@ import { ConsoleMailer } from './auth/mailer.js';
 import { InMemorySessionStore, RedisSessionStore, type SessionStore } from './auth/sessionStore.js';
 import { MagicLinkAuthProvider } from './auth/magicLinkProvider.js';
 import { createApp } from './app.js';
+import { runScheduledFreezes } from './services/freeze.js';
+import type { Queryable } from './db/pool.js';
+
+const FREEZE_CHECK_INTERVAL_MS = 60_000;
+
+function startFreezeScheduler(db: Queryable): void {
+  setInterval(() => {
+    runScheduledFreezes(db).catch((err) => {
+      console.error('Scheduled freeze check failed', err);
+    });
+  }, FREEZE_CHECK_INTERVAL_MS);
+}
 
 async function buildSessionStore(redisUrl: string | undefined): Promise<SessionStore> {
   if (!redisUrl) return new InMemorySessionStore();
@@ -24,6 +36,7 @@ async function main(): Promise<void> {
   });
 
   const app = createApp({ authProvider, db });
+  startFreezeScheduler(db);
   app.listen(config.port, () => {
     console.log(`Pulse listening on :${config.port}`);
   });

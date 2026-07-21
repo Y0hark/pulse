@@ -62,3 +62,21 @@ export interface TeamReportInput {
   alerts: { content: string; severity: AlertSeverity }[];
   opportunities: Opportunity[];
 }
+
+/** The immutable payload persisted at freeze time — the same shape as a live dashboard aggregate. */
+export interface PeriodSnapshot {
+  teamId: string;
+  periodId: number;
+  payload: DashboardAggregate;
+  frozenAt: string;
+}
+
+/** A team's freeze configuration, used by both manual freeze and the scheduled auto-freeze job. */
+export interface TeamFreezeConfig {
+  id: string;
+  slug: string;
+  timezone: string;
+  freezeDow: number;
+  freezeTime: string;
+  freezeMode: 'auto' | 'manual' | 'both';
+}
