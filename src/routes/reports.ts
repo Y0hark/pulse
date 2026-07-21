@@ -2,13 +2,16 @@ import { Router } from 'express';
 import type { Queryable } from '../db/pool.js';
 import {
   getCurrentPeriod,
+  getPeriodById,
   getPeriodByIsoWeek,
   getPreviousReport,
+  getReportById,
   getReportForPeriod,
   getTeamPeriodStatus,
   submitReport,
   upsertReport,
 } from '../db/reports.js';
+import { getUserById } from '../db/users.js';
 import { buildDraftFromPrevious } from '../services/prefill.js';
 import type { ReportWritePayload } from '../reports/types.js';
 
@@ -111,6 +114,36 @@ export function createReportsRouter(db: Queryable): Router {
       return;
     }
     res.status(200).json({ period, report });
+  });
+
+  // Registered after the /reports/mine* routes above: ':reportId' would otherwise
+  // greedily match the literal 'mine' segment first.
+  router.get('/teams/:team/reports/:reportId', async (req, res) => {
+    const found = await getReportById(db, req.params.reportId);
+    // Same 404 whether the report doesn't exist or belongs to another team: avoids
+    // leaking cross-team report ids to a team member probing the URL space.
+    if (!found || found.teamId !== req.teamId) {
+      res.status(404).json({ error: 'report_not_found' });
+      return;
+    }
+
+    const [period, owner] = await Promise.all([
+      getPeriodById(db, found.report.periodId),
+      getUserById(db, found.userId),
+    ]);
+    const periodStatus = await getTeamPeriodStatus(db, req.teamId!, found.report.periodId);
+
+    const isOwner = found.userId === req.userId;
+    const canEdit = periodStatus === 'open' && (isOwner || req.teamRole === 'manager' || req.teamRole === 'admin');
+
+    res.status(200).json({
+      report: found.report,
+      period,
+      periodStatus,
+      owner: owner ? { id: owner.id, displayName: owner.displayName ?? owner.email } : null,
+      isOwner,
+      canEdit,
+    });
   });
 
   return router;

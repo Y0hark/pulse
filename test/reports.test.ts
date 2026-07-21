@@ -121,6 +121,79 @@ describe('GET /teams/:team/reports/mine', () => {
   });
 });
 
+describe('GET /teams/:team/reports/:reportId', () => {
+  async function setupWithSecondMember() {
+    const db = new FakeDb();
+    db.seedUser('fake-user-1', 'owner@example.com', 'Owner Person');
+    const team = db.seedTeam('ceva-logistics');
+    db.addMember(team.id, 'fake-user-1');
+    db.addMember(team.id, 'fake-user-2');
+    const period = db.seedPeriod('2026-W29', '2026-07-13', '2026-07-20');
+
+    const authProvider = new FakeAuthProvider();
+    const app = createApp({ authProvider, db });
+    await request(app).get('/auth/callback?token=valid-token').expect(302);
+
+    const payload = {
+      workload: 55,
+      deliveredCnt: 2,
+      inflightCnt: 1,
+      projectCards: [{ title: 'Rollout', description: null, status: 'good', sortOrder: 0 }],
+      majorTasksDid: ['Shipped v1'],
+      majorTasksToDo: ['Ship v2'],
+      alerts: [],
+      opportunities: [],
+    };
+    const put = await request(app)
+      .put(`/teams/ceva-logistics/reports/mine?period=${period.iso_week}`)
+      .send(payload)
+      .expect(200);
+
+    return { db, team, period, app, reportId: put.body.report.id as string };
+  }
+
+  it('lets the owner view their own report with canEdit=true while the period is open', async () => {
+    const { app, reportId } = await setupWithSecondMember();
+    const res = await request(app).get(`/teams/ceva-logistics/reports/${reportId}`).expect(200);
+
+    expect(res.body.report.id).toBe(reportId);
+    expect(res.body.isOwner).toBe(true);
+    expect(res.body.canEdit).toBe(true);
+    expect(res.body.periodStatus).toBe('open');
+  });
+
+  it('includes the owner display info and full report body for any team member', async () => {
+    const { app, reportId } = await setupWithSecondMember();
+    const res = await request(app).get(`/teams/ceva-logistics/reports/${reportId}`).expect(200);
+
+    expect(res.body.owner).toEqual({ id: 'fake-user-1', displayName: 'Owner Person' });
+    expect(res.body.report.projectCards).toHaveLength(1);
+    expect(res.body.report.majorTasksToDo).toEqual(['Ship v2']);
+  });
+
+  it('404s when the report belongs to a different team', async () => {
+    const { app, db } = await setupWithSecondMember();
+    const otherTeam = db.seedTeam('other-team');
+    db.addMember(otherTeam.id, 'fake-user-1');
+    const otherPeriod = db.seedPeriod('2026-W30', '2026-07-20', '2026-07-27');
+    const otherPut = await request(app)
+      .put(`/teams/other-team/reports/mine?period=${otherPeriod.iso_week}`)
+      .send({ workload: 10, deliveredCnt: 0, inflightCnt: 0, projectCards: [], majorTasksDid: [], majorTasksToDo: [], alerts: [], opportunities: [] })
+      .expect(200);
+
+    await request(app).get(`/teams/ceva-logistics/reports/${otherPut.body.report.id}`).expect(404);
+  });
+
+  it('canEdit is false once the period is frozen, even for the owner', async () => {
+    const { app, db, team, period, reportId } = await setupWithSecondMember();
+    db.freezePeriod(team.id, period.id);
+
+    const res = await request(app).get(`/teams/ceva-logistics/reports/${reportId}`).expect(200);
+    expect(res.body.isOwner).toBe(true);
+    expect(res.body.canEdit).toBe(false);
+  });
+});
+
 describe('prefill from a previous week', () => {
   it('clones project cards and to-dos, and resets weekly counters', async () => {
     // Periods must be seeded in chronological order: period_id ordering (like a real SERIAL

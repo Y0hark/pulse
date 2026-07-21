@@ -100,4 +100,22 @@ export function submitMyReport(
   });
 }
 
+export interface ReportOwner {
+  id: string;
+  displayName: string;
+}
+
+export interface ReportViewResponse {
+  report: ReportRecord;
+  period: ReportPeriod;
+  periodStatus: PeriodStatus;
+  owner: ReportOwner | null;
+  isOwner: boolean;
+  canEdit: boolean;
+}
+
+export function getReport(team: string, reportId: string): Promise<ReportViewResponse> {
+  return request(`/teams/${team}/reports/${encodeURIComponent(reportId)}`);
+}
+
 export { ApiError };

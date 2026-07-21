@@ -102,6 +102,12 @@ export class FakeDb implements Queryable {
     return row;
   }
 
+  seedUser(id: string, email: string, displayName: string | null = null): UserRow {
+    const row = { id, email, display_name: displayName, profile_id: null, is_global_admin: false };
+    this.users.push(row);
+    return row;
+  }
+
   addMember(teamId: string, userId: string, role = 'member'): void {
     this.teamMembers.push({ team_id: teamId, user_id: userId, role });
   }
@@ -158,6 +164,13 @@ export class FakeDb implements Queryable {
       return { rows: [{ ...row, profile_code: null, profile_label: null }] };
     }
 
+    if (sql.startsWith('SELECT id, email, display_name FROM users WHERE id = $1')) {
+      const [userId] = params as [string];
+      const row = this.users.find((u) => u.id === userId);
+      if (!row) return { rows: [] };
+      return { rows: [{ id: row.id, email: row.email, display_name: row.display_name }] };
+    }
+
     if (sql.startsWith('SELECT t.id, t.name, t.slug, tm.role')) {
       return { rows: [] };
     }
@@ -175,6 +188,11 @@ export class FakeDb implements Queryable {
       if (sql.includes('iso_week = $1')) {
         const [isoWeek] = params as [string];
         const row = this.periods.find((p) => p.iso_week === isoWeek);
+        return { rows: row ? [row] : [] };
+      }
+      if (sql.includes('WHERE id = $1')) {
+        const [periodId] = params as [number];
+        const row = this.periods.find((p) => p.id === periodId);
         return { rows: row ? [row] : [] };
       }
       // starts_on <= now(), most recent
@@ -195,6 +213,12 @@ export class FakeDb implements Queryable {
       if (existing) existing.status = status;
       else this.teamPeriodStatus.push({ team_id: teamId, period_id: periodId, status });
       return { rows: [] };
+    }
+
+    if (sql.startsWith('SELECT r.id, r.period_id, r.workload') && sql.includes('WHERE r.id = $1')) {
+      const [reportId] = params as [string];
+      const row = this.reports.find((r) => r.id === reportId);
+      return { rows: row ? [row] : [] };
     }
 
     if (sql.startsWith('SELECT r.id, r.period_id, r.workload')) {

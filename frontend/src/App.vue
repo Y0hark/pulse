@@ -1,7 +1,5 @@
-<script setup lang="ts">
-import ReportFormView from './views/pulse/ReportFormView.vue';
-</script>
+<script setup lang="ts"></script>
 
 <template>
-  <ReportFormView />
+  <router-view />
 </template>

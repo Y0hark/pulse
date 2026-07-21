@@ -5,6 +5,7 @@ import { findTeamMembership } from '../db/teams.js';
 declare module 'express-serve-static-core' {
   interface Request {
     teamId?: string;
+    teamRole?: 'member' | 'manager' | 'admin';
   }
 }
 
@@ -18,6 +19,7 @@ export function requireTeamMember(db: Queryable) {
       return;
     }
     req.teamId = membership.teamId;
+    req.teamRole = membership.role;
     next();
   };
 }

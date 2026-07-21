@@ -5,6 +5,7 @@ import type { ProjectCardDraft } from '../../api/pulse';
 const props = defineProps<{
   modelValue: ProjectCardDraft;
   disabled?: boolean;
+  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -14,13 +15,24 @@ const emit = defineEmits<{
 // Unique per-instance radio group name so multiple ProjectCards on one page don't cross-select.
 const radioName = `project-status-${Math.random().toString(36).slice(2)}`;
 
+const STATUS_LABEL: Record<ProjectCardDraft['status'], string> = {
+  good: '🟢 Good',
+  at_risk: '🟠 At risk',
+  blocked: '🔴 Blocked',
+};
+
 function patch(partial: Partial<ProjectCardDraft>): void {
   emit('update:modelValue', { ...props.modelValue, ...partial });
 }
 </script>
 
 <template>
-  <fieldset class="project-card" :disabled="disabled">
+  <article v-if="readonly" class="project-card project-card--readonly" :class="`project-card--${modelValue.status}`">
+    <h3 class="project-card__title">{{ modelValue.title }}</h3>
+    <p v-if="modelValue.description" class="project-card__description">{{ modelValue.description }}</p>
+    <span class="project-card__status">{{ STATUS_LABEL[modelValue.status] }}</span>
+  </article>
+  <fieldset v-else class="project-card" :disabled="disabled">
     <input
       class="project-card__title"
       type="text"
@@ -54,5 +66,25 @@ function patch(partial: Partial<ProjectCardDraft>): void {
 }
 .project-card__title {
   font-weight: 600;
+}
+.project-card--readonly {
+  border-left-width: 4px;
+}
+.project-card--good {
+  border-left-color: #22c55e;
+}
+.project-card--at_risk {
+  border-left-color: #f97316;
+}
+.project-card--blocked {
+  border-left-color: #ef4444;
+}
+.project-card--readonly .project-card__description {
+  color: #555;
+  white-space: pre-wrap;
+}
+.project-card__status {
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 </style>

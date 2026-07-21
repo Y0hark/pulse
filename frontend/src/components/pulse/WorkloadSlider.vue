@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { workloadZoneFor } from '../../utils/workloadZones';
 
 const props = defineProps<{
   modelValue: number;
@@ -10,20 +11,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: number];
 }>();
 
-type Zone = { label: string; emoji: string; color: string };
-
-const ZONES: { max: number; zone: Zone }[] = [
-  { max: 25, zone: { label: 'Low', emoji: '🟦', color: '#3b82f6' } },
-  { max: 60, zone: { label: 'Steady', emoji: '🟩', color: '#22c55e' } },
-  { max: 85, zone: { label: 'High', emoji: '🟧', color: '#f97316' } },
-  { max: 100, zone: { label: 'Critical', emoji: '🟥', color: '#ef4444' } },
-];
-
-function zoneFor(value: number): Zone {
-  return (ZONES.find((z) => value <= z.max) ?? ZONES[ZONES.length - 1]).zone;
-}
-
-const zone = computed(() => zoneFor(props.modelValue));
+const zone = computed(() => workloadZoneFor(props.modelValue));
 
 function onInput(event: Event): void {
   const value = Number((event.target as HTMLInputElement).value);

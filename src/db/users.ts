@@ -36,6 +36,16 @@ export async function upsertUserByEmail(db: Queryable, email: string): Promise<U
   };
 }
 
+export async function getUserById(
+  db: Queryable,
+  userId: string,
+): Promise<{ id: string; email: string; displayName: string | null } | null> {
+  const result = await db.query(`SELECT id, email, display_name FROM users WHERE id = $1`, [userId]);
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  return { id: row.id, email: row.email, displayName: row.display_name };
+}
+
 export async function getUserWithTeams(db: Queryable, userId: string): Promise<UserWithTeams | null> {
   const userResult = await db.query(
     `SELECT u.id, u.email, u.display_name, u.is_global_admin, p.code AS profile_code, p.label AS profile_label

@@ -26,6 +26,14 @@ export async function getPeriodByIsoWeek(db: Queryable, isoWeek: string): Promis
   return toPeriod(result.rows[0]);
 }
 
+export async function getPeriodById(db: Queryable, periodId: number): Promise<ReportPeriod | null> {
+  const result = await db.query(`SELECT id, iso_week, starts_on, ends_on FROM report_periods WHERE id = $1`, [
+    periodId,
+  ]);
+  if (result.rows.length === 0) return null;
+  return toPeriod(result.rows[0]);
+}
+
 export async function getTeamPeriodStatus(db: Queryable, teamId: string, periodId: number): Promise<PeriodStatus> {
   const result = await db.query(`SELECT status FROM team_period_status WHERE team_id = $1 AND period_id = $2`, [
     teamId,
@@ -65,6 +73,22 @@ export async function getReportForPeriod(
   );
   if (result.rows.length === 0) return null;
   return loadReportBody(db, result.rows[0]);
+}
+
+export async function getReportById(
+  db: Queryable,
+  reportId: string,
+): Promise<{ report: ReportRecord; userId: string; teamId: string } | null> {
+  const result = await db.query(
+    `SELECT r.id, r.period_id, r.workload, r.delivered_cnt, r.inflight_cnt, r.submitted_at, r.updated_at,
+            r.user_id, r.team_id
+     FROM reports r WHERE r.id = $1`,
+    [reportId],
+  );
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  const report = await loadReportBody(db, row);
+  return { report, userId: row.user_id, teamId: row.team_id };
 }
 
 async function getPreviousReportRow(
