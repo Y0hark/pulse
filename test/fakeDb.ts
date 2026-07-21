@@ -14,6 +14,7 @@ interface UserRow {
   email: string;
   display_name: string | null;
   profile_id: number | null;
+  profile_code: string | null;
   is_global_admin: boolean;
 }
 
@@ -102,8 +103,8 @@ export class FakeDb implements Queryable {
     return row;
   }
 
-  seedUser(id: string, email: string, displayName: string | null = null): UserRow {
-    const row = { id, email, display_name: displayName, profile_id: null, is_global_admin: false };
+  seedUser(id: string, email: string, displayName: string | null = null, profileCode: string | null = null): UserRow {
+    const row = { id, email, display_name: displayName, profile_id: null, profile_code: profileCode, is_global_admin: false };
     this.users.push(row);
     return row;
   }
@@ -151,7 +152,7 @@ export class FakeDb implements Queryable {
       const [email] = params as [string];
       let row = this.users.find((u) => u.email === email);
       if (!row) {
-        row = { id: randomUUID(), email, display_name: null, profile_id: null, is_global_admin: false };
+        row = { id: randomUUID(), email, display_name: null, profile_id: null, profile_code: null, is_global_admin: false };
         this.users.push(row);
       }
       return { rows: [row] };
@@ -173,6 +174,15 @@ export class FakeDb implements Queryable {
 
     if (sql.startsWith('SELECT t.id, t.name, t.slug, tm.role')) {
       return { rows: [] };
+    }
+
+    if (sql.startsWith('SELECT u.id, u.display_name, p.code AS profile_code')) {
+      const [teamId] = params as [string];
+      const memberIds = new Set(this.teamMembers.filter((m) => m.team_id === teamId).map((m) => m.user_id));
+      const rows = this.users
+        .filter((u) => memberIds.has(u.id))
+        .map((u) => ({ id: u.id, display_name: u.display_name, profile_code: u.profile_code }));
+      return { rows };
     }
 
     if (sql.startsWith('SELECT t.id AS team_id, tm.role')) {
@@ -213,6 +223,38 @@ export class FakeDb implements Queryable {
       if (existing) existing.status = status;
       else this.teamPeriodStatus.push({ team_id: teamId, period_id: periodId, status });
       return { rows: [] };
+    }
+
+    if (sql.startsWith('SELECT r.id, r.user_id, r.workload, r.delivered_cnt, r.inflight_cnt, r.submitted_at')) {
+      const [teamId, periodId] = params as [string, number];
+      const rows = this.reports.filter((r) => r.team_id === teamId && r.period_id === periodId);
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT report_id, status FROM project_cards')) {
+      const [reportIds] = params as [string[]];
+      const ids = new Set(reportIds);
+      return { rows: this.projectCards.filter((c) => ids.has(c.report_id)).map((c) => ({ report_id: c.report_id, status: c.status })) };
+    }
+
+    if (sql.startsWith('SELECT report_id, content, severity FROM report_items')) {
+      const [reportIds] = params as [string[]];
+      const ids = new Set(reportIds);
+      return {
+        rows: this.reportItems
+          .filter((i) => ids.has(i.report_id) && i.kind === 'alert')
+          .map((i) => ({ report_id: i.report_id, content: i.content, severity: i.severity })),
+      };
+    }
+
+    if (sql.startsWith('SELECT id, report_id, type, content FROM opportunities')) {
+      const [reportIds] = params as [string[]];
+      const ids = new Set(reportIds);
+      return {
+        rows: this.opportunities
+          .filter((o) => ids.has(o.report_id))
+          .map((o) => ({ id: o.id, report_id: o.report_id, type: o.type, content: o.content })),
+      };
     }
 
     if (sql.startsWith('SELECT r.id, r.period_id, r.workload') && sql.includes('WHERE r.id = $1')) {
