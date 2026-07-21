@@ -30,13 +30,22 @@ export async function getFrozenSnapshot(db: Queryable, teamId: string, periodId:
   return getPeriodSnapshot(db, teamId, periodId);
 }
 
+/** node-postgres returns `date` columns as JS `Date` objects, not ISO strings, regardless of
+ * how callers type them — normalize to the calendar date string Luxon expects. */
+function toISODateString(endsOn: string | Date): string {
+  return endsOn instanceof Date ? endsOn.toISOString().slice(0, 10) : endsOn;
+}
+
 /** Pure: the next instant (in the team's timezone) at which a period ending on `endsOn`
  * becomes due for auto-freeze, per that team's configured weekday + time. */
-export function computeFreezeInstant(endsOn: string, config: Pick<TeamFreezeConfig, 'timezone' | 'freezeDow' | 'freezeTime'>): DateTime {
+export function computeFreezeInstant(endsOn: string | Date, config: Pick<TeamFreezeConfig, 'timezone' | 'freezeDow' | 'freezeTime'>): DateTime {
   const [hour, minute] = config.freezeTime.split(':').map(Number);
-  let candidate = DateTime.fromISO(endsOn, { zone: config.timezone })
+  let candidate = DateTime.fromISO(toISODateString(endsOn), { zone: config.timezone })
     .plus({ days: 1 })
     .set({ hour, minute, second: 0, millisecond: 0 });
+  if (!candidate.isValid) {
+    throw new Error(`computeFreezeInstant: invalid endsOn value: ${String(endsOn)}`);
+  }
   while (candidate.weekday !== config.freezeDow) {
     candidate = candidate.plus({ days: 1 });
   }
