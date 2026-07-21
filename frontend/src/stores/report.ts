@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import * as api from '../api/pulse';
-import type { PeriodStatus, ReportDraft, ReportPeriod } from '../api/pulse';
+import type { GamificationSummary, PeriodStatus, ReportDraft, ReportPeriod } from '../api/pulse';
 
 const AUTOSAVE_DEBOUNCE_MS = 1500;
 
@@ -28,6 +28,7 @@ interface ReportState {
   lastSavedAt: string | null;
   error: string | null;
   autosaveTimer: ReturnType<typeof setTimeout> | null;
+  gamification: GamificationSummary | null;
 }
 
 export const useReportStore = defineStore('report', {
@@ -42,6 +43,7 @@ export const useReportStore = defineStore('report', {
     lastSavedAt: null,
     error: null,
     autosaveTimer: null,
+    gamification: null,
   }),
 
   getters: {
@@ -63,6 +65,18 @@ export const useReportStore = defineStore('report', {
       } finally {
         this.loading = false;
       }
+      void this.loadGamification();
+    },
+
+    /** Gamification is a soft, additive signal — a failure here is swallowed rather than
+     * surfaced as a report error, so it can never look like it's blocking submission. */
+    async loadGamification(): Promise<void> {
+      if (!this.period) return;
+      try {
+        this.gamification = await api.getMyGamification(this.team, this.period.isoWeek);
+      } catch {
+        this.gamification = null;
+      }
     },
 
     /** Call after any field mutation. Debounces the actual PUT so keystrokes don't each fire a request. */
@@ -81,6 +95,7 @@ export const useReportStore = defineStore('report', {
       try {
         const res = await api.putMyReport(this.team, this.period.isoWeek, this.draft);
         this.lastSavedAt = res.report.updatedAt;
+        void this.loadGamification();
       } catch (err) {
         this.error = err instanceof Error ? err.message : 'Autosave failed';
       } finally {
@@ -97,6 +112,7 @@ export const useReportStore = defineStore('report', {
         await api.putMyReport(this.team, this.period.isoWeek, this.draft);
         const res = await api.submitMyReport(this.team, this.period.isoWeek);
         this.lastSavedAt = res.report.updatedAt;
+        void this.loadGamification();
       } catch (err) {
         this.error = err instanceof Error ? err.message : 'Submit failed';
       } finally {

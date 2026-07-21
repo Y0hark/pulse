@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     config,
   });
 
-  const app = createApp({ authProvider, db });
+  const app = createApp({ authProvider, db, gamificationConfig: config.gamification });
   startFreezeScheduler(db);
   app.listen(config.port, () => {
     console.log(`Pulse listening on :${config.port}`);

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useDashboardStore } from '../../stores/dashboard';
 import StatGauge from '../../components/pulse/StatGauge.vue';
 import DistributionChart from '../../components/pulse/DistributionChart.vue';
 import ProfileBreakdown from '../../components/pulse/ProfileBreakdown.vue';
-import type { AlertSeverity } from '../../api/pulse';
+import Leaderboard from '../../components/pulse/Leaderboard.vue';
+import * as api from '../../api/pulse';
+import type { AlertSeverity, LeaderboardEntry } from '../../api/pulse';
 
 const TEAM = 'ceva-logistics';
 
@@ -15,8 +17,26 @@ const HEALTH_LABEL: Record<string, string> = { good: '🟢 Good', at_risk: '🟠
 
 const aggregate = computed(() => store.aggregate);
 
+const leaderboardEntries = ref<LeaderboardEntry[]>([]);
+const leaderboardOptIn = ref(false);
+
+async function loadLeaderboard(): Promise<void> {
+  const [{ entries }, { leaderboardOptIn: optedIn }] = await Promise.all([
+    api.getTeamLeaderboard(TEAM),
+    api.getMyGamification(TEAM),
+  ]);
+  leaderboardEntries.value = entries;
+  leaderboardOptIn.value = optedIn;
+}
+
+async function onToggleOptIn(optIn: boolean): Promise<void> {
+  await api.setLeaderboardOptIn(TEAM, optIn);
+  await loadLeaderboard();
+}
+
 onMounted(() => {
   store.startPolling(TEAM);
+  void loadLeaderboard();
 });
 onUnmounted(() => {
   store.stopPolling();
@@ -95,6 +115,10 @@ onUnmounted(() => {
             {{ member.displayName ?? 'Unnamed member' }}
           </li>
         </ul>
+      </section>
+
+      <section>
+        <Leaderboard :entries="leaderboardEntries" :opted-in="leaderboardOptIn" @toggle-opt-in="onToggleOptIn" />
       </section>
     </template>
   </main>

@@ -31,6 +31,7 @@ interface TeamMemberRow {
   team_id: string;
   user_id: string;
   role: string;
+  leaderboard_opt_in: boolean;
 }
 
 interface PeriodRow {
@@ -132,7 +133,7 @@ export class FakeDb implements Queryable {
   }
 
   addMember(teamId: string, userId: string, role = 'member'): void {
-    this.teamMembers.push({ team_id: teamId, user_id: userId, role });
+    this.teamMembers.push({ team_id: teamId, user_id: userId, role, leaderboard_opt_in: false });
   }
 
   seedPeriod(isoWeek: string, startsOn: string, endsOn: string): PeriodRow {
@@ -401,8 +402,49 @@ export class FakeDb implements Queryable {
       return { rows: [] };
     }
 
+    if (sql.startsWith('SELECT id, slug, timezone, freeze_dow, freeze_time, freeze_mode FROM teams WHERE id = $1')) {
+      const [teamId] = params as [string];
+      const row = this.teams.find((t) => t.id === teamId);
+      return { rows: row ? [row] : [] };
+    }
+
     if (sql.startsWith('SELECT id, slug, timezone, freeze_dow, freeze_time, freeze_mode FROM teams')) {
       const rows = this.teams.filter((t) => t.freeze_mode === 'auto' || t.freeze_mode === 'both');
+      return { rows };
+    }
+
+    if (sql.startsWith('UPDATE team_members SET leaderboard_opt_in')) {
+      const [teamId, userId, optIn] = params as [string, string, boolean];
+      const row = this.teamMembers.find((m) => m.team_id === teamId && m.user_id === userId);
+      if (row) row.leaderboard_opt_in = optIn;
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('SELECT leaderboard_opt_in FROM team_members')) {
+      const [teamId, userId] = params as [string, string];
+      const row = this.teamMembers.find((m) => m.team_id === teamId && m.user_id === userId);
+      return { rows: row ? [{ leaderboard_opt_in: row.leaderboard_opt_in }] : [] };
+    }
+
+    if (sql.startsWith('SELECT u.id, u.display_name\n     FROM team_members')) {
+      const [teamId] = params as [string];
+      const optedInIds = new Set(
+        this.teamMembers.filter((m) => m.team_id === teamId && m.leaderboard_opt_in).map((m) => m.user_id),
+      );
+      const rows = this.users.filter((u) => optedInIds.has(u.id)).map((u) => ({ id: u.id, display_name: u.display_name }));
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT p.id, p.ends_on, r.submitted_at')) {
+      const [userId, teamId, uptoPeriodId, limit] = params as [string, string, number, number];
+      const rows = this.periods
+        .filter((p) => p.id <= uptoPeriodId)
+        .sort((a, b) => b.id - a.id)
+        .slice(0, limit)
+        .map((p) => {
+          const report = this.reports.find((r) => r.period_id === p.id && r.user_id === userId && r.team_id === teamId);
+          return { id: p.id, ends_on: p.ends_on, submitted_at: report?.submitted_at ?? null };
+        });
       return { rows };
     }
 

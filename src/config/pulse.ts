@@ -1,3 +1,11 @@
+/** XP/streak/badge rules — boot-configurable so tuning gamification never needs a code change. */
+export interface GamificationConfig {
+  onTimeXp: number;
+  lateXpDecayPerHour: number;
+  streakBreaksOnLate: boolean;
+  badgeStreakThresholds: number[];
+}
+
 export interface PulseConfig {
   port: number;
   databaseUrl: string;
@@ -8,6 +16,16 @@ export interface PulseConfig {
   sessionTtlMinutes: number;
   cookieName: string;
   isProduction: boolean;
+  gamification: GamificationConfig;
+}
+
+function parseIntList(raw: string | undefined, fallback: number[]): number[] {
+  if (!raw || raw.trim() === '') return fallback;
+  const parsed = raw
+    .split(',')
+    .map((v) => Number(v.trim()))
+    .filter((v) => Number.isInteger(v) && v > 0);
+  return parsed.length > 0 ? parsed : fallback;
 }
 
 function parseAllowedDomains(raw: string | undefined): string[] | undefined {
@@ -29,5 +47,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PulseConfig {
     sessionTtlMinutes: Number(env.SESSION_TTL_MINUTES ?? 60 * 24 * 7),
     cookieName: env.SESSION_COOKIE_NAME ?? 'pulse_session',
     isProduction: env.NODE_ENV === 'production',
+    gamification: {
+      onTimeXp: Number(env.GAMIFICATION_ON_TIME_XP ?? 10),
+      lateXpDecayPerHour: Number(env.GAMIFICATION_LATE_XP_DECAY_PER_HOUR ?? 1),
+      streakBreaksOnLate: (env.GAMIFICATION_STREAK_BREAKS_ON_LATE ?? 'true') !== 'false',
+      badgeStreakThresholds: parseIntList(env.GAMIFICATION_BADGE_STREAK_THRESHOLDS, [4, 8, 12]),
+    },
   };
 }

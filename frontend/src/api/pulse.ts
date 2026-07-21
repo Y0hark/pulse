@@ -214,4 +214,72 @@ export function getTeamWalkthrough(team: string, isoWeek?: string): Promise<Walk
   return request(`/teams/${team}/reports${query}`);
 }
 
+export type BadgeCode = 'streak' | 'first_submitter' | 'zero_blockers';
+
+export interface Badge {
+  code: BadgeCode;
+  label: string;
+  threshold?: number;
+}
+
+export interface StreakResult {
+  current: number;
+  longest: number;
+}
+
+export interface PeriodXp {
+  periodId: number;
+  xp: number;
+  onTime: boolean;
+}
+
+export interface XpResult {
+  total: number;
+  periods: PeriodXp[];
+}
+
+export interface CompletionRingResult {
+  percent: number;
+  filledFields: number;
+  totalFields: number;
+}
+
+export interface GamificationSummary {
+  period: ReportPeriod;
+  streak: StreakResult;
+  xp: XpResult;
+  completionRing: CompletionRingResult;
+  badges: Badge[];
+  leaderboardOptIn: boolean;
+}
+
+export function getMyGamification(team: string, isoWeek?: string): Promise<GamificationSummary> {
+  const query = isoWeek ? `?period=${encodeURIComponent(isoWeek)}` : '';
+  return request(`/teams/${team}/gamification/me${query}`);
+}
+
+export function setLeaderboardOptIn(team: string, optIn: boolean): Promise<{ leaderboardOptIn: boolean }> {
+  return request(`/teams/${team}/gamification/opt-in`, {
+    method: 'PUT',
+    body: JSON.stringify({ optIn }),
+  });
+}
+
+export interface LeaderboardEntry {
+  userId: string;
+  displayName: string | null;
+  streak: number;
+  xp: number;
+}
+
+export interface LeaderboardResponse {
+  period: ReportPeriod;
+  entries: LeaderboardEntry[];
+}
+
+export function getTeamLeaderboard(team: string, isoWeek?: string): Promise<LeaderboardResponse> {
+  const query = isoWeek ? `?period=${encodeURIComponent(isoWeek)}` : '';
+  return request(`/teams/${team}/gamification/leaderboard${query}`);
+}
+
 export { ApiError };

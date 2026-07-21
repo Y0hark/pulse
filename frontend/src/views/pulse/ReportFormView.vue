@@ -4,6 +4,8 @@ import { useReportStore } from '../../stores/report';
 import WorkloadSlider from '../../components/pulse/WorkloadSlider.vue';
 import ProjectCard from '../../components/pulse/ProjectCard.vue';
 import RepeatableList from '../../components/pulse/RepeatableList.vue';
+import StreakBadge from '../../components/pulse/StreakBadge.vue';
+import CompletionRing from '../../components/pulse/CompletionRing.vue';
 import type { AlertDraft, AlertSeverity, OpportunityDraft, OpportunityType, ProjectCardDraft } from '../../api/pulse';
 
 const TEAMS = ['ceva-logistics'];
@@ -59,6 +61,11 @@ function newOpportunity(): OpportunityDraft {
       <p v-if="store.error" class="report-form__error">{{ store.error }}</p>
       <p v-if="store.saving" class="report-form__status">Saving…</p>
     </header>
+
+    <section v-if="store.gamification" class="report-form__gamification">
+      <StreakBadge :streak="store.gamification.streak" :xp="store.gamification.xp" :badges="store.gamification.badges" />
+      <CompletionRing :completion="store.gamification.completionRing" />
+    </section>
 
     <section>
       <WorkloadSlider v-model="store.draft.workload" :disabled="store.isFrozen" @update:model-value="onFieldChange" />
@@ -208,6 +215,16 @@ function newOpportunity(): OpportunityDraft {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+.report-form__gamification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
 }
 .report-form__tasks {
   display: grid;

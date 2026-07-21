@@ -115,6 +115,33 @@ function toSnapshot(row: any): PeriodSnapshot {
   };
 }
 
+export interface SubmissionHistoryRow {
+  periodId: number;
+  endsOn: string;
+  submittedAt: string | null;
+}
+
+/** A user's submission history for one team, most recent period first, capped at `limit` — the
+ * raw material for streak/XP computation (src/services/gamification.ts turns it into deadlines). */
+export async function getSubmissionHistory(
+  db: Queryable,
+  userId: string,
+  teamId: string,
+  uptoPeriodId: number,
+  limit = 12,
+): Promise<SubmissionHistoryRow[]> {
+  const result = await db.query(
+    `SELECT p.id, p.ends_on, r.submitted_at
+     FROM report_periods p
+     LEFT JOIN reports r ON r.period_id = p.id AND r.user_id = $1 AND r.team_id = $2
+     WHERE p.id <= $3
+     ORDER BY p.id DESC
+     LIMIT $4`,
+    [userId, teamId, uptoPeriodId, limit],
+  );
+  return result.rows.map((r: any) => ({ periodId: r.id, endsOn: r.ends_on, submittedAt: r.submitted_at }));
+}
+
 export async function getReportForPeriod(
   db: Queryable,
   userId: string,
