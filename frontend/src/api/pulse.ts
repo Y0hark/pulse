@@ -282,4 +282,11 @@ export function getTeamLeaderboard(team: string, isoWeek?: string): Promise<Lead
   return request(`/teams/${team}/gamification/leaderboard${query}`);
 }
 
+export function requestMagicLink(email: string): Promise<{ ok: boolean }> {
+  return request('/auth/magic-link', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
 export { ApiError };

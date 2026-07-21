@@ -19,14 +19,20 @@ const aggregate = computed(() => store.aggregate);
 
 const leaderboardEntries = ref<LeaderboardEntry[]>([]);
 const leaderboardOptIn = ref(false);
+const leaderboardError = ref<string | null>(null);
 
 async function loadLeaderboard(): Promise<void> {
-  const [{ entries }, { leaderboardOptIn: optedIn }] = await Promise.all([
-    api.getTeamLeaderboard(TEAM),
-    api.getMyGamification(TEAM),
-  ]);
-  leaderboardEntries.value = entries;
-  leaderboardOptIn.value = optedIn;
+  try {
+    const [{ entries }, { leaderboardOptIn: optedIn }] = await Promise.all([
+      api.getTeamLeaderboard(TEAM),
+      api.getMyGamification(TEAM),
+    ]);
+    leaderboardEntries.value = entries;
+    leaderboardOptIn.value = optedIn;
+    leaderboardError.value = null;
+  } catch (err) {
+    leaderboardError.value = err instanceof Error ? err.message : 'Failed to load leaderboard';
+  }
 }
 
 async function onToggleOptIn(optIn: boolean): Promise<void> {
@@ -118,7 +124,8 @@ onUnmounted(() => {
       </section>
 
       <section>
-        <Leaderboard :entries="leaderboardEntries" :opted-in="leaderboardOptIn" @toggle-opt-in="onToggleOptIn" />
+        <p v-if="leaderboardError" class="team-dashboard__error">{{ leaderboardError }}</p>
+        <Leaderboard v-else :entries="leaderboardEntries" :opted-in="leaderboardOptIn" @toggle-opt-in="onToggleOptIn" />
       </section>
     </template>
   </main>

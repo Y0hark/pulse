@@ -6,7 +6,7 @@ Stack: Express + PostgreSQL backend (`src/`), Vue 3 + Vite frontend (`frontend/`
 
 ## Prerequisites
 
-- Node.js >= 20
+- Node.js >= 20.6.0 (needed for `--env-file`, which `npm run dev`/`start` use to load `.env`)
 - Docker Desktop (for Postgres) — or a local Postgres 16 instance if you'd rather not use Docker
 
 ## 1. Start the database
@@ -62,7 +62,15 @@ npm install
 npm run dev
 ```
 
-Runs on `http://localhost:3000` (see `PORT` in `.env`). Magic-link auth emails are printed to the console via `ConsoleMailer` — no real mail service needed for local dev.
+Runs on `http://localhost:3000` (see `PORT` in `.env`; loaded via Node's `--env-file=.env` flag). Magic-link auth emails are printed to the console via `ConsoleMailer` — no real mail service needed for local dev.
+
+### Signing in
+
+There's no seeded session — sign in through the app:
+
+1. Go to the frontend's `/login` page and submit your email.
+2. Check the **backend terminal** for a line like `[magic-link] you@example.com -> http://localhost:3000/auth/callback?token=...` — `ConsoleMailer` prints instead of sending real email.
+3. Open that URL in the browser; it sets the session cookie and redirects to `/`.
 
 ## 5. Start the frontend
 
