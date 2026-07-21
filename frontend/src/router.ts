@@ -6,6 +6,9 @@ import TeamDashboardView from './views/pulse/TeamDashboardView.vue';
 import SnapshotView from './views/pulse/SnapshotView.vue';
 import TeamWalkthroughView from './views/pulse/TeamWalkthroughView.vue';
 import MissionsView from './views/pulse/MissionsView.vue';
+import MissionCreateView from './views/pulse/MissionCreateView.vue';
+import MissionDetailView from './views/pulse/MissionDetailView.vue';
+import MissionEditView from './views/pulse/MissionEditView.vue';
 import ReportsHomeView from './views/pulse/ReportsHomeView.vue';
 import SettingsView from './views/pulse/SettingsView.vue';
 import HelpView from './views/pulse/HelpView.vue';
@@ -25,6 +28,26 @@ export const router = createRouter({
         { path: '', redirect: { name: 'dashboard' } },
         { path: 'dashboard', name: 'dashboard', component: TeamDashboardView, meta: { title: 'Dashboard' } },
         { path: 'missions', name: 'missions', component: MissionsView, meta: { title: 'Missions' } },
+        {
+          path: 'missions/new',
+          name: 'mission-create',
+          component: MissionCreateView,
+          meta: { title: 'New mission' },
+        },
+        {
+          path: 'missions/:slug',
+          name: 'mission-detail',
+          component: MissionDetailView,
+          props: true,
+          meta: { title: 'Mission' },
+        },
+        {
+          path: 'missions/:slug/edit',
+          name: 'mission-edit',
+          component: MissionEditView,
+          props: true,
+          meta: { title: 'Edit mission' },
+        },
         {
           path: 'weekly-pulse',
           name: 'weekly-pulse',

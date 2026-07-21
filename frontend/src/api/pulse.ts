@@ -298,11 +298,129 @@ export interface CurrentUser {
   id: string;
   email: string;
   profile: { code: string; label: string } | null;
+  isGlobalAdmin: boolean;
   teams: TeamMembership[];
 }
 
 export function getMe(): Promise<CurrentUser> {
   return request('/me');
+}
+
+export type MissionStatus = 'active' | 'archived';
+export type ReportingFrequency = 'weekly' | 'biweekly' | 'monthly';
+export type FreezeMode = 'auto' | 'manual' | 'both';
+
+export interface MissionSummary {
+  id: string;
+  name: string;
+  slug: string;
+  clientName: string | null;
+  status: MissionStatus;
+  reportingFrequency: ReportingFrequency;
+  memberCount: number;
+}
+
+export interface MissionRecord {
+  id: string;
+  name: string;
+  slug: string;
+  clientName: string | null;
+  status: MissionStatus;
+  reportingFrequency: ReportingFrequency;
+  timezone: string;
+  startsOn: string | null;
+  endsOn: string | null;
+  freezeDow: number;
+  freezeTime: string;
+  freezeMode: FreezeMode;
+  archivedAt: string | null;
+  createdAt: string;
+}
+
+export interface MissionMember {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  role: 'member' | 'manager' | 'admin';
+}
+
+export interface MissionRecentReport {
+  id: string;
+  periodId: number;
+  isoWeek: string;
+  ownerDisplayName: string | null;
+  ownerEmail: string;
+  submittedAt: string | null;
+  updatedAt: string;
+}
+
+export interface MissionDetail extends MissionRecord {
+  memberCount: number;
+  members: MissionMember[];
+  recentReports: MissionRecentReport[];
+  completion: { submitted: number; total: number } | null;
+}
+
+export interface MissionInput {
+  name: string;
+  clientName?: string | null;
+  timezone?: string;
+  startsOn?: string | null;
+  endsOn?: string | null;
+  reportingFrequency?: ReportingFrequency;
+  freezeDow?: number;
+  freezeTime?: string;
+  freezeMode?: FreezeMode;
+  memberEmails?: string[];
+}
+
+export interface MissionUpdateInput {
+  name: string;
+  clientName?: string | null;
+  timezone: string;
+  startsOn?: string | null;
+  endsOn?: string | null;
+  reportingFrequency: ReportingFrequency;
+  freezeDow: number;
+  freezeTime: string;
+  freezeMode: FreezeMode;
+}
+
+export function getMissions(): Promise<{ missions: MissionSummary[] }> {
+  return request('/missions');
+}
+
+export function getMission(slug: string): Promise<{ mission: MissionDetail }> {
+  return request(`/missions/${encodeURIComponent(slug)}`);
+}
+
+export function createMission(input: MissionInput): Promise<{ mission: MissionRecord }> {
+  return request('/missions', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export function updateMission(slug: string, input: MissionUpdateInput): Promise<{ mission: MissionRecord }> {
+  return request(`/missions/${encodeURIComponent(slug)}`, { method: 'PUT', body: JSON.stringify(input) });
+}
+
+export function archiveMission(slug: string): Promise<{ mission: MissionRecord }> {
+  return request(`/missions/${encodeURIComponent(slug)}/archive`, { method: 'POST' });
+}
+
+export function activateMission(slug: string): Promise<{ mission: MissionRecord }> {
+  return request(`/missions/${encodeURIComponent(slug)}/activate`, { method: 'POST' });
+}
+
+export function addMissionMember(slug: string, email: string): Promise<{ member: MissionMember }> {
+  return request(`/missions/${encodeURIComponent(slug)}/members`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function removeMissionMember(slug: string, userId: string): Promise<void> {
+  return request(`/missions/${encodeURIComponent(slug)}/members/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+  });
 }
 
 export { ApiError };

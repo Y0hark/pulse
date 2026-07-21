@@ -23,6 +23,7 @@ export function createMeRouter(authProvider: AuthProvider, db: Queryable): Route
       id: user.id,
       email: user.email,
       profile: user.profile,
+      isGlobalAdmin: user.isGlobalAdmin,
       teams: user.teams,
     });
   });

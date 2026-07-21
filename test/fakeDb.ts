@@ -20,11 +20,19 @@ interface UserRow {
 
 interface TeamRow {
   id: string;
+  name: string;
   slug: string;
   timezone: string;
   freeze_dow: number;
   freeze_time: string;
   freeze_mode: string;
+  client_name: string | null;
+  starts_on: string | null;
+  ends_on: string | null;
+  reporting_frequency: string;
+  status: string;
+  archived_at: Date | null;
+  created_at: Date;
 }
 
 interface TeamMemberRow {
@@ -112,22 +120,51 @@ export class FakeDb implements Queryable {
 
   seedTeam(
     slug: string,
-    freezeConfig: { timezone?: string; freezeDow?: number; freezeTime?: string; freezeMode?: string } = {},
+    freezeConfig: {
+      name?: string;
+      timezone?: string;
+      freezeDow?: number;
+      freezeTime?: string;
+      freezeMode?: string;
+      clientName?: string | null;
+      status?: string;
+    } = {},
   ): TeamRow {
     const row = {
       id: randomUUID(),
+      name: freezeConfig.name ?? slug,
       slug,
       timezone: freezeConfig.timezone ?? 'Europe/Paris',
       freeze_dow: freezeConfig.freezeDow ?? 2,
       freeze_time: freezeConfig.freezeTime ?? '09:30',
       freeze_mode: freezeConfig.freezeMode ?? 'both',
+      client_name: freezeConfig.clientName ?? null,
+      starts_on: null,
+      ends_on: null,
+      reporting_frequency: 'weekly',
+      status: freezeConfig.status ?? 'active',
+      archived_at: null,
+      created_at: new Date(),
     };
     this.teams.push(row);
     return row;
   }
 
-  seedUser(id: string, email: string, displayName: string | null = null, profileCode: string | null = null): UserRow {
-    const row = { id, email, display_name: displayName, profile_id: null, profile_code: profileCode, is_global_admin: false };
+  seedUser(
+    id: string,
+    email: string,
+    displayName: string | null = null,
+    profileCode: string | null = null,
+    isGlobalAdmin = false,
+  ): UserRow {
+    const row = {
+      id,
+      email,
+      display_name: displayName,
+      profile_id: null,
+      profile_code: profileCode,
+      is_global_admin: isGlobalAdmin,
+    };
     this.users.push(row);
     return row;
   }
@@ -400,6 +437,150 @@ export class FakeDb implements Queryable {
       const [reportId, type, content] = params as [string, string, string];
       this.opportunities.push({ id: randomUUID(), report_id: reportId, type, content });
       return { rows: [] };
+    }
+
+    if (sql.startsWith('SELECT is_global_admin FROM users WHERE id = $1')) {
+      const [userId] = params as [string];
+      const row = this.users.find((u) => u.id === userId);
+      return { rows: row ? [{ is_global_admin: row.is_global_admin }] : [] };
+    }
+
+    if (sql.startsWith('SELECT t.id, t.name, t.slug, t.client_name, t.status, t.reporting_frequency')) {
+      const rows = [...this.teams]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((t) => ({
+          id: t.id,
+          name: t.name,
+          slug: t.slug,
+          client_name: t.client_name,
+          status: t.status,
+          reporting_frequency: t.reporting_frequency,
+          member_count: this.teamMembers.filter((m) => m.team_id === t.id).length,
+        }));
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT id, name, slug, client_name, timezone, starts_on, ends_on, reporting_frequency')) {
+      const [slug] = params as [string];
+      const row = this.teams.find((t) => t.slug === slug);
+      return { rows: row ? [row] : [] };
+    }
+
+    if (sql.startsWith('SELECT u.id, u.email, u.display_name, tm.role')) {
+      const [teamId] = params as [string];
+      const members = this.teamMembers.filter((m) => m.team_id === teamId);
+      const rows = members
+        .map((m) => {
+          const user = this.users.find((u) => u.id === m.user_id);
+          if (!user) return null;
+          return { id: user.id, email: user.email, display_name: user.display_name, role: m.role };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null)
+        .sort((a, b) => (a.display_name ?? a.email).localeCompare(b.display_name ?? b.email));
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT r.id, r.period_id, r.submitted_at, r.updated_at, u.display_name, u.email, p.iso_week')) {
+      const [teamId] = params as [string];
+      const rows = this.reports
+        .filter((r) => r.team_id === teamId)
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .slice(0, 5)
+        .map((r) => {
+          const user = this.users.find((u) => u.id === r.user_id);
+          const period = this.periods.find((p) => p.id === r.period_id);
+          return {
+            id: r.id,
+            period_id: r.period_id,
+            submitted_at: r.submitted_at,
+            updated_at: r.updated_at,
+            display_name: user?.display_name ?? null,
+            email: user?.email ?? '',
+            iso_week: period?.iso_week ?? '',
+          };
+        });
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT COUNT(*) AS total FROM team_members WHERE team_id = $1')) {
+      const [teamId] = params as [string];
+      return { rows: [{ total: this.teamMembers.filter((m) => m.team_id === teamId).length }] };
+    }
+
+    if (sql.startsWith('SELECT COUNT(*) AS submitted FROM reports WHERE team_id = $1 AND period_id = $2')) {
+      const [teamId, periodId] = params as [string, number];
+      const submitted = this.reports.filter(
+        (r) => r.team_id === teamId && r.period_id === periodId && r.submitted_at !== null,
+      ).length;
+      return { rows: [{ submitted }] };
+    }
+
+    if (sql.startsWith('SELECT 1 FROM teams WHERE slug = $1')) {
+      const [slug] = params as [string];
+      const exists = this.teams.some((t) => t.slug === slug);
+      return { rows: exists ? [{ '?column?': 1 }] : [] };
+    }
+
+    if (sql.startsWith('INSERT INTO teams (name, slug, client_name')) {
+      const [name, slug, clientName, timezone, startsOn, endsOn, reportingFrequency, freezeDow, freezeTime, freezeMode] =
+        params as [string, string, string | null, string, string | null, string | null, string, number, string, string];
+      const row: TeamRow = {
+        id: randomUUID(),
+        name,
+        slug,
+        client_name: clientName,
+        timezone,
+        starts_on: startsOn,
+        ends_on: endsOn,
+        reporting_frequency: reportingFrequency,
+        freeze_dow: freezeDow,
+        freeze_time: freezeTime,
+        freeze_mode: freezeMode,
+        status: 'active',
+        archived_at: null,
+        created_at: new Date(),
+      };
+      this.teams.push(row);
+      return { rows: [row] };
+    }
+
+    if (sql.startsWith('INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, \'member\')')) {
+      const [teamId, userId] = params as [string, string];
+      const existing = this.teamMembers.find((m) => m.team_id === teamId && m.user_id === userId);
+      if (!existing) this.teamMembers.push({ team_id: teamId, user_id: userId, role: 'member', leaderboard_opt_in: false });
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('DELETE FROM team_members WHERE team_id = $1 AND user_id = $2')) {
+      const [teamId, userId] = params as [string, string];
+      this.removeAll(this.teamMembers, (m) => m.team_id === teamId && m.user_id === userId);
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('UPDATE teams SET\n       name = $2')) {
+      const [slug, name, clientName, timezone, startsOn, endsOn, reportingFrequency, freezeDow, freezeTime, freezeMode] =
+        params as [string, string, string | null, string, string | null, string | null, string, number, string, string];
+      const row = this.teams.find((t) => t.slug === slug);
+      if (!row) return { rows: [] };
+      row.name = name;
+      row.client_name = clientName;
+      row.timezone = timezone;
+      row.starts_on = startsOn;
+      row.ends_on = endsOn;
+      row.reporting_frequency = reportingFrequency;
+      row.freeze_dow = freezeDow;
+      row.freeze_time = freezeTime;
+      row.freeze_mode = freezeMode;
+      return { rows: [row] };
+    }
+
+    if (sql.startsWith('UPDATE teams SET status = $2')) {
+      const [slug, status] = params as [string, string];
+      const row = this.teams.find((t) => t.slug === slug);
+      if (!row) return { rows: [] };
+      row.status = status;
+      row.archived_at = status === 'archived' ? new Date() : null;
+      return { rows: [row] };
     }
 
     if (sql.startsWith('SELECT id, slug, timezone, freeze_dow, freeze_time, freeze_mode FROM teams WHERE id = $1')) {
