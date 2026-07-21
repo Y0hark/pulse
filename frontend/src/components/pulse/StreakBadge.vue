@@ -32,7 +32,7 @@ const flameCount = computed(() => Math.min(props.streak.current, 5));
 .streak-badge {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-4);
   flex-wrap: wrap;
 }
 .streak-badge__flame {
@@ -46,27 +46,28 @@ const flameCount = computed(() => Math.min(props.streak.current, 5));
   opacity: 0.5;
 }
 .streak-badge__count {
-  margin-left: 0.4rem;
-  font-weight: 600;
+  margin-left: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 .streak-badge__xp {
-  font-weight: 600;
-  color: #b45309;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
 }
 .streak-badge__badges {
   display: flex;
-  gap: 0.4rem;
+  gap: var(--space-2);
   list-style: none;
   padding: 0;
   margin: 0;
   flex-wrap: wrap;
 }
 .streak-badge__badge {
-  background: #fef3c7;
-  color: #92400e;
-  border-radius: 999px;
-  padding: 0.15rem 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 500;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
 }
 </style>

@@ -26,30 +26,33 @@ const zone = computed(() => workloadZoneFor(props.value));
 .stat-gauge {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
+  min-width: 0;
 }
 .stat-gauge__label {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   min-width: 5.5rem;
+  color: var(--color-text-primary);
 }
 .stat-gauge__track {
   flex: 1;
   height: 0.6rem;
-  background: #e5e7eb;
-  border-radius: 999px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-full);
   overflow: hidden;
+  min-width: 0;
 }
 .stat-gauge__fill {
   height: 100%;
-  border-radius: 999px;
-  transition: width 0.2s ease;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
 }
 .stat-gauge__badge {
-  color: white;
-  border-radius: 999px;
-  padding: 0.15rem 0.6rem;
-  font-size: 0.85rem;
-  font-weight: 500;
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
 </style>

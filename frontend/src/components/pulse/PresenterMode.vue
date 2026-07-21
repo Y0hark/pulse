@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted } from 'vue';
 import type { ReportRecord, WalkthroughEntry } from '../../api/pulse';
 import ReportRenderer from './ReportRenderer.vue';
+import { PulseButton, PulseSkeleton } from '../ui';
 
 const props = defineProps<{
   entries: WalkthroughEntry[];
@@ -36,7 +37,12 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown));
           v-for="(entry, i) in entries"
           :key="entry.user.id"
           :class="['presenter__jump-item', { 'presenter__jump-item--active': i === currentIndex }]"
+          role="button"
+          tabindex="0"
+          :aria-current="i === currentIndex ? 'true' : undefined"
           @click="emit('jump', i)"
+          @keydown.enter="emit('jump', i)"
+          @keydown.space.prevent="emit('jump', i)"
         >
           <span class="presenter__jump-status" :class="`presenter__jump-status--${entry.status}`">
             {{ entry.status === 'submitted' ? '●' : '○' }}
@@ -58,14 +64,19 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown));
       </header>
 
       <div class="presenter__body">
-        <p v-if="reportLoading">Loading…</p>
+        <div v-if="reportLoading" class="presenter__loading">
+          <PulseSkeleton variant="block" height="2rem" />
+          <PulseSkeleton variant="block" height="8rem" />
+        </div>
         <p v-else-if="!report" class="presenter__placeholder">No report yet.</p>
         <ReportRenderer v-else :report="report" />
       </div>
 
       <footer class="presenter__nav">
-        <button type="button" :disabled="currentIndex === 0" @click="emit('prev')">← Prev</button>
-        <button type="button" :disabled="currentIndex === entries.length - 1" @click="emit('next')">Next →</button>
+        <PulseButton variant="secondary" :disabled="currentIndex === 0" @click="emit('prev')">← Prev</PulseButton>
+        <PulseButton variant="secondary" :disabled="currentIndex === entries.length - 1" @click="emit('next')">
+          Next →
+        </PulseButton>
       </footer>
     </div>
   </div>
@@ -77,25 +88,31 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown));
   inset: 0;
   z-index: 100;
   display: flex;
-  background: white;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
 }
 .presenter__sidebar {
   width: 220px;
   flex-shrink: 0;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg-raised);
   display: flex;
   flex-direction: column;
-  padding: 1rem;
-  gap: 1rem;
+  padding: var(--space-4);
+  gap: var(--space-4);
   overflow-y: auto;
 }
 .presenter__exit {
   align-self: flex-start;
-  border: 1px solid #ddd;
-  border-radius: 0.375rem;
-  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
   background: none;
+  color: var(--color-text-primary);
   cursor: pointer;
+}
+.presenter__exit:hover {
+  background: var(--color-surface-hover);
 }
 .presenter__jump-list {
   list-style: none;
@@ -103,61 +120,73 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown));
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 .presenter__jump-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 0.375rem;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 .presenter__jump-item:hover {
-  background: #f3f4f6;
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
 }
 .presenter__jump-item--active {
-  background: #eef2ff;
-  font-weight: 600;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
 }
 .presenter__jump-status--submitted {
-  color: #22c55e;
+  color: var(--color-success);
 }
 .presenter__jump-status--not_submitted {
-  color: #d1d5db;
+  color: var(--color-text-muted);
 }
 .presenter__stage {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 2rem;
+  padding: var(--space-6) var(--space-8);
   overflow-y: auto;
+  min-width: 0;
 }
 .presenter__header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 1.5rem;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-6);
 }
 .presenter__profile {
-  color: #666;
+  color: var(--color-text-secondary);
 }
 .presenter__progress {
-  color: #666;
-  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
 }
 .presenter__body {
   flex: 1;
   max-width: 720px;
 }
+.presenter__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
 .presenter__placeholder {
-  color: #888;
+  color: var(--color-text-muted);
 }
 .presenter__nav {
   display: flex;
   justify-content: space-between;
-  padding-top: 1.5rem;
+  padding-top: var(--space-6);
   max-width: 720px;
 }
 </style>

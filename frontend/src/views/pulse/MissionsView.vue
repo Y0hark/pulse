@@ -104,11 +104,15 @@ onMounted(() => {
         v-for="mission in filteredMissions"
         :key="mission.id"
         class="missions__card"
+        role="button"
+        tabindex="0"
         @click="openMission(mission.slug)"
+        @keydown.enter="openMission(mission.slug)"
+        @keydown.space.prevent="openMission(mission.slug)"
       >
         <template #header>
           <div class="missions__card-header">
-            <span>{{ mission.name }}</span>
+            <span class="missions__card-name">{{ mission.name }}</span>
             <PulseBadge :variant="mission.status === 'active' ? 'success' : 'neutral'">
               {{ mission.status === 'active' ? 'Active' : 'Archived' }}
             </PulseBadge>
@@ -163,6 +167,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.missions__card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .missions__client {

@@ -101,7 +101,17 @@ const hasPeriods = computed(() => (periods.value?.length ?? 0) > 0);
     />
 
     <div v-else class="submission-history__list">
-      <PulseCard v-for="entry in periods" :key="entry.periodId" class="submission-history__row" @click="toggle(entry)">
+      <PulseCard
+        v-for="entry in periods"
+        :key="entry.periodId"
+        class="submission-history__row"
+        role="button"
+        tabindex="0"
+        :aria-expanded="expandedIsoWeek === entry.isoWeek"
+        @click="toggle(entry)"
+        @keydown.enter="toggle(entry)"
+        @keydown.space.prevent="toggle(entry)"
+      >
         <div class="submission-history__row-summary">
           <span class="submission-history__week">{{ entry.isoWeek }}</span>
           <span class="submission-history__ends">ends {{ new Date(entry.endsOn).toLocaleDateString() }}</span>
@@ -125,7 +135,7 @@ const hasPeriods = computed(() => (periods.value?.length ?? 0) > 0);
 .submission-history {
   max-width: 720px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--space-6) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -146,6 +156,7 @@ const hasPeriods = computed(() => (periods.value?.length ?? 0) > 0);
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 .submission-history__week {
   font-weight: var(--font-weight-semibold);

@@ -5,10 +5,10 @@ export interface WorkloadZone {
 }
 
 const ZONES: { max: number; zone: WorkloadZone }[] = [
-  { max: 25, zone: { label: 'Low', emoji: '🟦', color: '#3b82f6' } },
-  { max: 60, zone: { label: 'Steady', emoji: '🟩', color: '#22c55e' } },
-  { max: 85, zone: { label: 'High', emoji: '🟧', color: '#f97316' } },
-  { max: 100, zone: { label: 'Critical', emoji: '🟥', color: '#ef4444' } },
+  { max: 25, zone: { label: 'Low', emoji: '🟦', color: 'var(--color-info)' } },
+  { max: 60, zone: { label: 'Steady', emoji: '🟩', color: 'var(--color-success)' } },
+  { max: 85, zone: { label: 'High', emoji: '🟧', color: 'var(--color-warning)' } },
+  { max: 100, zone: { label: 'Critical', emoji: '🟥', color: 'var(--color-danger)' } },
 ];
 
 export function workloadZoneFor(value: number): WorkloadZone {

@@ -66,18 +66,56 @@ function updateAt(index: number, item: T): void {
 .repeatable-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .repeatable-list__item {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .repeatable-list__content {
   flex: 1;
+  min-width: 0;
 }
 .repeatable-list__controls {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+.repeatable-list__controls button {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  width: 1.75rem;
+  height: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.repeatable-list__controls button:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+.repeatable-list__controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.repeatable-list__add {
+  align-self: flex-start;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+.repeatable-list__add:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+.repeatable-list__add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

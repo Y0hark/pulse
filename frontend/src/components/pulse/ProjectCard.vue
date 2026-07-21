@@ -59,32 +59,60 @@ function patch(partial: Partial<ProjectCardDraft>): void {
 .project-card {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
-  padding: 0.75rem;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin: 0;
+  min-width: 0;
 }
 .project-card__title {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
+}
+fieldset.project-card {
+  background: var(--color-surface);
+}
+.project-card input.project-card__title,
+.project-card textarea.project-card__description {
+  width: 100%;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-md);
+}
+.project-card input.project-card__title::placeholder,
+.project-card textarea.project-card__description::placeholder {
+  color: var(--color-text-muted);
+}
+.project-card input.project-card__title:focus-visible,
+.project-card textarea.project-card__description:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 .project-card--readonly {
   border-left-width: 4px;
+  color: var(--color-text-primary);
 }
 .project-card--good {
-  border-left-color: #22c55e;
+  border-left-color: var(--color-success);
 }
 .project-card--at_risk {
-  border-left-color: #f97316;
+  border-left-color: var(--color-warning);
 }
 .project-card--blocked {
-  border-left-color: #ef4444;
+  border-left-color: var(--color-danger);
 }
 .project-card--readonly .project-card__description {
-  color: #555;
+  color: var(--color-text-secondary);
   white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 .project-card__status {
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 </style>

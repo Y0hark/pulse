@@ -111,7 +111,7 @@ onUnmounted(() => {
           <router-link :to="`/periods/${store.period.id}/snapshot`">
             <PulseButton variant="ghost" size="sm">Freeze / snapshot</PulseButton>
           </router-link>
-          <router-link :to="{ path: '/walkthrough', query: { period: store.period.isoWeek } }">
+          <router-link :to="{ name: 'team', query: { period: store.period.isoWeek } }">
             <PulseButton variant="ghost" size="sm">Walkthrough</PulseButton>
           </router-link>
         </template>

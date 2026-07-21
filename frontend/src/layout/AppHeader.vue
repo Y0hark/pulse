@@ -84,6 +84,8 @@ function onMissionChange(slug: string): void {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .app-header__mission-select {

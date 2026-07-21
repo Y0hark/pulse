@@ -7,7 +7,12 @@ const props = defineProps<{
 }>();
 
 const BUCKET_LABEL: Record<string, string> = { low: 'Low', steady: 'Steady', high: 'High', critical: 'Critical' };
-const BUCKET_COLOR: Record<string, string> = { low: '#3b82f6', steady: '#22c55e', high: '#f97316', critical: '#ef4444' };
+const BUCKET_COLOR: Record<string, string> = {
+  low: 'var(--color-info)',
+  steady: 'var(--color-success)',
+  high: 'var(--color-warning)',
+  critical: 'var(--color-danger)',
+};
 
 const maxCount = computed(() => Math.max(1, ...props.distribution.map((d) => d.count)));
 </script>
@@ -31,34 +36,35 @@ const maxCount = computed(() => Math.max(1, ...props.distribution.map((d) => d.c
 .distribution-chart {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 .distribution-chart__row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-3);
 }
 .distribution-chart__label {
   min-width: 4.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 .distribution-chart__track {
   flex: 1;
   height: 0.9rem;
-  background: #e5e7eb;
-  border-radius: 999px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 .distribution-chart__bar {
   height: 100%;
-  border-radius: 999px;
-  transition: width 0.2s ease;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
 }
 .distribution-chart__count {
   min-width: 1.5rem;
   text-align: right;
-  font-size: 0.85rem;
-  color: #666;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 </style>

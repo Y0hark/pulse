@@ -42,15 +42,15 @@ const dashOffset = computed(() => CIRCUMFERENCE * (1 - props.completion.percent 
 }
 .completion-ring__track {
   fill: none;
-  stroke: #e5e7eb;
+  stroke: var(--color-border);
   stroke-width: 4;
 }
 .completion-ring__fill {
   fill: none;
-  stroke: #22c55e;
+  stroke: var(--color-success);
   stroke-width: 4;
   stroke-linecap: round;
-  transition: stroke-dashoffset 0.3s ease;
+  transition: stroke-dashoffset var(--transition-base);
 }
 .completion-ring__label {
   position: absolute;
@@ -58,7 +58,8 @@ const dashOffset = computed(() => CIRCUMFERENCE * (1 - props.completion.percent 
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 </style>

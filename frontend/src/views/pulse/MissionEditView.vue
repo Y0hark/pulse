@@ -214,6 +214,10 @@ onMounted(() => {
 
 .mission-edit__member span:first-child {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mission-edit__member-empty {
@@ -225,5 +229,6 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 </style>

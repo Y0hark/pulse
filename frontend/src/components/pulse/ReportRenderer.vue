@@ -78,60 +78,73 @@ const sortedAlerts = computed(() =>
 .report-renderer {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-6);
+  min-width: 0;
 }
 .report-renderer__counters {
   display: flex;
-  gap: 1.5rem;
+  gap: var(--space-6);
 }
 .report-renderer__stat {
   display: flex;
   flex-direction: column;
 }
 .report-renderer__stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
 }
 .report-renderer__stat-label {
-  color: #666;
-  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 .report-renderer__cards {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 .report-renderer__tasks {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: var(--space-4);
+}
+.report-renderer__tasks ul {
+  padding-left: var(--space-5);
+  color: var(--color-text-primary);
+}
+@media (max-width: 640px) {
+  .report-renderer__tasks {
+    grid-template-columns: 1fr;
+  }
 }
 .report-renderer__alerts {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
   list-style: none;
   padding: 0;
 }
 .report-renderer__alerts li {
-  border-radius: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  border-left: 4px solid #ccc;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  border-left: 4px solid var(--color-border-strong);
+  color: var(--color-text-primary);
+  overflow-wrap: break-word;
 }
 .report-renderer__alert--critical {
-  border-left-color: #ef4444;
-  background: #fee2e2;
+  border-left-color: var(--color-danger);
+  background: var(--color-danger-soft);
 }
 .report-renderer__alert--warn {
-  border-left-color: #f97316;
-  background: #ffedd5;
+  border-left-color: var(--color-warning);
+  background: var(--color-warning-soft);
 }
 .report-renderer__alert--info {
-  border-left-color: #3b82f6;
-  background: #dbeafe;
+  border-left-color: var(--color-info);
+  background: var(--color-info-soft);
 }
 .report-renderer__alert-severity {
-  font-weight: 600;
-  margin-right: 0.5rem;
+  font-weight: var(--font-weight-semibold);
+  margin-right: var(--space-2);
 }
 </style>

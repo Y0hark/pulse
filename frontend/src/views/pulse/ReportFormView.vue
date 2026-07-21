@@ -242,59 +242,116 @@ function newOpportunity(): OpportunityDraft {
 .report-form {
   max-width: 720px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--space-6) var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-6);
 }
 .report-form__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
+  flex-wrap: wrap;
 }
 .report-form__gamification {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: #f9fafb;
-  border-radius: 0.5rem;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
 }
 .report-form__tasks {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: var(--space-4);
+}
+@media (max-width: 640px) {
+  .report-form__tasks {
+    grid-template-columns: 1fr;
+  }
 }
 .report-form__counters {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.report-form__counters label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
 }
 .report-form__alert-row,
 .report-form__opportunity-row {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.report-form__alert-row input,
+.report-form__opportunity-row input {
+  flex: 1;
+  min-width: 10rem;
 }
 .report-form__frozen-banner {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
 }
 .report-form__success-banner {
-  background: #dcfce7;
-  color: #166534;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
 }
 .report-form__mission {
-  margin: 0.25rem 0 0;
-  color: #666;
-  font-size: 0.9rem;
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 .report-form__error {
-  color: #991b1b;
+  color: var(--color-danger);
+}
+
+/* Native form controls in this view aren't wrapped by PulseInput/PulseSelect
+   (they use custom change handlers), so apply the shared field look directly. */
+.report-form input[type='text'],
+.report-form input[type='number'],
+.report-form select {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+.report-form input[type='number'] {
+  width: 6rem;
+}
+.report-form input[type='text']:hover:not(:disabled),
+.report-form input[type='number']:hover:not(:disabled),
+.report-form select:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+.report-form input[type='text']:focus-visible,
+.report-form input[type='number']:focus-visible,
+.report-form select:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+.report-form input:disabled,
+.report-form select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

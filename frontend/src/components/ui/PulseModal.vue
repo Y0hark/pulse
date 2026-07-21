@@ -1,5 +1,7 @@
 <script setup lang="ts">
-withDefaults(
+import { onUnmounted, watch } from 'vue';
+
+const props = withDefaults(
   defineProps<{
     modelValue: boolean;
     title?: string;
@@ -14,6 +16,20 @@ const emit = defineEmits<{
 function close(): void {
   emit('update:modelValue', false);
 }
+
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') close();
+}
+
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (open) window.addEventListener('keydown', onKeydown);
+    else window.removeEventListener('keydown', onKeydown);
+  },
+  { immediate: true },
+);
+onUnmounted(() => window.removeEventListener('keydown', onKeydown));
 </script>
 
 <template>
