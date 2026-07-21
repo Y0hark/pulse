@@ -5,11 +5,13 @@ import TeamDashboardView from './views/pulse/TeamDashboardView.vue';
 import SnapshotView from './views/pulse/SnapshotView.vue';
 import TeamWalkthroughView from './views/pulse/TeamWalkthroughView.vue';
 import LoginView from './views/pulse/LoginView.vue';
+import DesignSystemView from './views/DesignSystemView.vue';
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', name: 'login', component: LoginView },
+    { path: '/design-system', name: 'design-system', component: DesignSystemView },
     { path: '/', name: 'report-form', component: ReportFormView },
     { path: '/reports/:reportId', name: 'personal-report', component: PersonalReportView, props: true },
     { path: '/dashboard', name: 'team-dashboard', component: TeamDashboardView },

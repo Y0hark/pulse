@@ -1,0 +1,198 @@
+/**
+ * TNP-inspired base theme: resets, global typography and layout conventions.
+ * Component-level styles live with their components in src/components/ui/*.
+ */
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 var(--space-2);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: var(--font-size-3xl);
+}
+h2 {
+  font-size: var(--font-size-2xl);
+}
+h3 {
+  font-size: var(--font-size-xl);
+}
+h4 {
+  font-size: var(--font-size-lg);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-accent-strong);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Layout conventions ------------------------------------------------- */
+
+/* Page-level container: centers content, desktop-first gutter. */
+.tnp-page {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: var(--space-8) var(--layout-gutter);
+}
+
+/* Section: vertical rhythm between stacked blocks on a page. */
+.tnp-section {
+  margin-bottom: var(--space-10);
+}
+
+.tnp-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.tnp-section__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tnp-section__subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Grid: responsive card/stat layout, desktop-first (collapses at tablet/mobile breakpoints). */
+.tnp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 960px) {
+  .tnp-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .tnp-page {
+    padding: var(--space-5) var(--space-4);
+  }
+  .tnp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Form field conventions — shared by Input/Select/Textarea so all form controls
+   look and behave identically without duplicating the base styles per component. */
+.pulse-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pulse-field__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.pulse-field__control {
+  width: 100%;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.pulse-field__control::placeholder {
+  color: var(--color-text-muted);
+}
+
+.pulse-field__control:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+
+.pulse-field__control:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.pulse-field__control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pulse-field--invalid .pulse-field__control {
+  border-color: var(--color-danger);
+}
+.pulse-field--invalid .pulse-field__control:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-danger-soft);
+}
+
+.pulse-field__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.pulse-field__error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+}
