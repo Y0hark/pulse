@@ -289,4 +289,20 @@ export function requestMagicLink(email: string): Promise<{ ok: boolean }> {
   });
 }
 
+export interface TeamMembership {
+  team: { id: string; name: string; slug: string };
+  role: 'member' | 'manager' | 'admin';
+}
+
+export interface CurrentUser {
+  id: string;
+  email: string;
+  profile: { code: string; label: string } | null;
+  teams: TeamMembership[];
+}
+
+export function getMe(): Promise<CurrentUser> {
+  return request('/me');
+}
+
 export { ApiError };

@@ -1,9 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import AppShell from './layout/AppShell.vue';
 import ReportFormView from './views/pulse/ReportFormView.vue';
 import PersonalReportView from './views/pulse/PersonalReportView.vue';
 import TeamDashboardView from './views/pulse/TeamDashboardView.vue';
 import SnapshotView from './views/pulse/SnapshotView.vue';
 import TeamWalkthroughView from './views/pulse/TeamWalkthroughView.vue';
+import MissionsView from './views/pulse/MissionsView.vue';
+import ReportsHomeView from './views/pulse/ReportsHomeView.vue';
+import SettingsView from './views/pulse/SettingsView.vue';
+import HelpView from './views/pulse/HelpView.vue';
+import NotFoundView from './views/pulse/NotFoundView.vue';
 import LoginView from './views/pulse/LoginView.vue';
 import DesignSystemView from './views/DesignSystemView.vue';
 
@@ -12,10 +18,39 @@ export const router = createRouter({
   routes: [
     { path: '/login', name: 'login', component: LoginView },
     { path: '/design-system', name: 'design-system', component: DesignSystemView },
-    { path: '/', name: 'report-form', component: ReportFormView },
-    { path: '/reports/:reportId', name: 'personal-report', component: PersonalReportView, props: true },
-    { path: '/dashboard', name: 'team-dashboard', component: TeamDashboardView },
-    { path: '/periods/:periodId/snapshot', name: 'period-snapshot', component: SnapshotView, props: true },
-    { path: '/walkthrough', name: 'team-walkthrough', component: TeamWalkthroughView },
+    {
+      path: '/',
+      component: AppShell,
+      children: [
+        { path: '', redirect: { name: 'dashboard' } },
+        { path: 'dashboard', name: 'dashboard', component: TeamDashboardView, meta: { title: 'Dashboard' } },
+        { path: 'missions', name: 'missions', component: MissionsView, meta: { title: 'Missions' } },
+        {
+          path: 'weekly-pulse',
+          name: 'weekly-pulse',
+          component: ReportFormView,
+          meta: { title: 'Weekly Pulse' },
+        },
+        { path: 'reports', name: 'reports', component: ReportsHomeView, meta: { title: 'Reports' } },
+        {
+          path: 'reports/:reportId',
+          name: 'personal-report',
+          component: PersonalReportView,
+          props: true,
+          meta: { title: 'Report' },
+        },
+        {
+          path: 'periods/:periodId/snapshot',
+          name: 'period-snapshot',
+          component: SnapshotView,
+          props: true,
+          meta: { title: 'Period Snapshot' },
+        },
+        { path: 'team', name: 'team', component: TeamWalkthroughView, meta: { title: 'Team & Users' } },
+        { path: 'settings', name: 'settings', component: SettingsView, meta: { title: 'Settings' } },
+        { path: 'help', name: 'help', component: HelpView, meta: { title: 'Help' } },
+        { path: ':pathMatch(.*)*', name: 'not-found', component: NotFoundView, meta: { title: 'Not found' } },
+      ],
+    },
   ],
 });
