@@ -1,8 +1,10 @@
 import type { Queryable } from '../db/pool.js';
 import { getTeamReportsForPeriod, getTeamRoster } from '../db/dashboard.js';
+import { listMissions } from '../db/missions.js';
 import { PROFILE_DEFS } from '../dashboard/profiles.js';
 import type { AlertSeverity } from '../reports/types.js';
 import type {
+  ConsolidatedReport,
   DashboardAggregate,
   MemberSummary,
   ProfileBreakdownEntry,
@@ -118,4 +120,54 @@ export async function getTeamDashboard(db: Queryable, teamId: string, periodId: 
   const aggregate = computeDashboard(roster, reports);
   cache.set(key, aggregate);
   return aggregate;
+}
+
+/**
+ * Cross-mission rollup for one period: every active mission's own dashboard aggregate, rolled
+ * up into per-mission rows plus org-wide totals — the "consolidated report" for someone overseeing
+ * multiple missions at once. Reuses getTeamDashboard (and its cache) per mission rather than
+ * re-querying, so it stays cheap even with many active missions.
+ */
+export async function getConsolidatedReport(db: Queryable, periodId: number): Promise<ConsolidatedReport> {
+  const missions = await listMissions(db);
+  const active = missions.filter((m) => m.status === 'active');
+
+  const rows: ConsolidatedReport['missions'] = [];
+  const topAlerts: ConsolidatedReport['topAlerts'] = [];
+
+  for (const mission of active) {
+    const aggregate = await getTeamDashboard(db, mission.id, periodId);
+    const submitted = aggregate.submissionStatus.submitted.length;
+    rows.push({
+      missionId: mission.id,
+      missionName: mission.name,
+      missionSlug: mission.slug,
+      headcount: mission.memberCount,
+      submitted,
+      meanWorkload: aggregate.workload.mean,
+      totalDelivered: aggregate.totalDelivered,
+      totalInFlight: aggregate.totalInFlight,
+      completionPct: mission.memberCount > 0 ? Math.round((submitted / mission.memberCount) * 100) : 0,
+    });
+    for (const alert of aggregate.alerts) {
+      topAlerts.push({ ...alert, missionName: mission.name });
+    }
+  }
+
+  const headcount = rows.reduce((sum, r) => sum + r.headcount, 0);
+  const totalSubmitted = rows.reduce((sum, r) => sum + r.submitted, 0);
+  const workloadValues = rows.filter((r) => r.submitted > 0).map((r) => r.meanWorkload);
+
+  return {
+    missions: rows,
+    totals: {
+      missionCount: rows.length,
+      headcount,
+      totalDelivered: rows.reduce((sum, r) => sum + r.totalDelivered, 0),
+      totalInFlight: rows.reduce((sum, r) => sum + r.totalInFlight, 0),
+      meanWorkload: workloadValues.length ? round1(mean(workloadValues)) : 0,
+      completionPct: headcount > 0 ? Math.round((totalSubmitted / headcount) * 100) : 0,
+    },
+    topAlerts: topAlerts.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]).slice(0, 10),
+  };
 }

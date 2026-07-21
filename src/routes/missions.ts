@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import type { AuthProvider } from '../auth/types.js';
 import type { Queryable } from '../db/pool.js';
-import { getCurrentPeriod } from '../db/reports.js';
+import { getCurrentPeriod, getPeriodByIsoWeek } from '../db/reports.js';
+import { getConsolidatedReport } from '../services/aggregation.js';
 import {
   addMissionMember,
   createMission,
@@ -80,6 +81,21 @@ export function createMissionsRouter(authProvider: AuthProvider, db: Queryable):
   router.get('/missions', auth, async (_req, res) => {
     const missions = await listMissions(db);
     res.status(200).json({ missions });
+  });
+
+  // Registered before '/missions/:slug' so the literal 'consolidated-report' segment
+  // isn't swallowed by the ':slug' param.
+  router.get('/missions/consolidated-report', auth, async (req, res) => {
+    const isoWeek = req.query.period;
+    const period =
+      typeof isoWeek === 'string' && isoWeek.trim() !== '' ? await getPeriodByIsoWeek(db, isoWeek) : await getCurrentPeriod(db);
+    if (!period) {
+      res.status(404).json({ error: 'period_not_found' });
+      return;
+    }
+
+    const report = await getConsolidatedReport(db, period.id);
+    res.status(200).json({ period, report });
   });
 
   router.get('/missions/:slug', auth, async (req, res) => {

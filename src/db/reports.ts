@@ -149,6 +149,25 @@ export async function getSubmissionHistory(
   }));
 }
 
+/** Periods this team has frozen, most recent first — the raw material for the historical-report
+ * list view (each entry links through to that period's already-frozen snapshot). */
+export async function getFrozenPeriodsForTeam(
+  db: Queryable,
+  teamId: string,
+  limit = 24,
+): Promise<{ period: ReportPeriod; frozenAt: string }[]> {
+  const result = await db.query(
+    `SELECT p.id, p.iso_week, p.starts_on, p.ends_on, s.frozen_at
+     FROM report_periods p
+     JOIN team_period_status s ON s.period_id = p.id AND s.team_id = $1
+     WHERE s.status = 'frozen'
+     ORDER BY p.id DESC
+     LIMIT $2`,
+    [teamId, limit],
+  );
+  return result.rows.map((r: any) => ({ period: toPeriod(r), frozenAt: r.frozen_at }));
+}
+
 export async function getReportForPeriod(
   db: Queryable,
   userId: string,

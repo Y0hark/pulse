@@ -6,14 +6,21 @@ import type { AlertSeverity, DashboardAggregate, ReportPeriod } from '../../api/
 import StatGauge from '../../components/pulse/StatGauge.vue';
 import DistributionChart from '../../components/pulse/DistributionChart.vue';
 import ProfileBreakdown from '../../components/pulse/ProfileBreakdown.vue';
+import ReportHeader from '../../components/pulse/ReportHeader.vue';
+import ExecutiveSummary from '../../components/pulse/ExecutiveSummary.vue';
+import { PulseBadge, PulseButton, PulseCard, PulseErrorState, PulseSkeleton, PulseStatCard } from '../../components/ui';
+import { useReportActions } from '../../composables/useReportActions';
+import { summarizeDashboard } from '../../utils/reportSummary';
 
 const TEAM = 'ceva-logistics';
 
 const SEVERITY_LABEL: Record<AlertSeverity, string> = { critical: '🔴 Critical', warn: '🟠 Warning', info: 'ℹ️ Info' };
+const SEVERITY_VARIANT: Record<AlertSeverity, 'danger' | 'warning' | 'accent'> = { critical: 'danger', warn: 'warning', info: 'accent' };
 const HEALTH_LABEL: Record<string, string> = { good: '🟢 Good', at_risk: '🟠 At risk', blocked: '🔴 Blocked' };
 
 const route = useRoute();
 const periodId = computed(() => Number(route.params.periodId));
+const { exportPdf, copyLink } = useReportActions();
 
 const period = ref<ReportPeriod | null>(null);
 const aggregate = ref<DashboardAggregate | null>(null);
@@ -24,6 +31,8 @@ const notFrozen = ref(false);
 const freezing = ref(false);
 const exportingPng = ref(false);
 const pageEl = ref<HTMLElement | null>(null);
+
+const summaryPoints = computed(() => (aggregate.value ? summarizeDashboard(aggregate.value) : []));
 
 async function load(): Promise<void> {
   loading.value = true;
@@ -61,10 +70,6 @@ async function freezeNow(): Promise<void> {
   }
 }
 
-function exportPdf(): void {
-  window.print();
-}
-
 async function exportPng(): Promise<void> {
   if (!pageEl.value) return;
   exportingPng.value = true;
@@ -87,76 +92,85 @@ onMounted(() => {
 
 <template>
   <main class="snapshot">
-    <p v-if="loading">Loading…</p>
-    <p v-else-if="error" class="snapshot__error">{{ error }}</p>
-
-    <div v-else-if="notFrozen" class="snapshot__not-frozen">
-      <p>This period hasn't been frozen yet.</p>
-      <button type="button" :disabled="freezing" @click="freezeNow">
-        {{ freezing ? 'Freezing…' : 'Freeze now' }}
-      </button>
+    <div v-if="loading" class="snapshot__skeleton">
+      <PulseSkeleton variant="block" height="4rem" />
+      <PulseSkeleton variant="block" height="8rem" />
+      <PulseSkeleton variant="block" height="12rem" />
     </div>
 
-    <template v-else-if="aggregate && period">
-      <div class="snapshot__actions">
-        <button type="button" @click="exportPdf">Export PDF</button>
-        <button type="button" :disabled="exportingPng" @click="exportPng">
-          {{ exportingPng ? 'Exporting…' : 'Export PNG' }}
-        </button>
+    <PulseErrorState v-else-if="error" title="Failed to load snapshot" :description="error" retryable @retry="load" />
+
+    <PulseCard v-else-if="notFrozen">
+      <div class="snapshot__not-frozen">
+        <p>This period hasn't been frozen yet — historical reports are only available once frozen.</p>
+        <PulseButton :loading="freezing" @click="freezeNow">Freeze now</PulseButton>
       </div>
+    </PulseCard>
 
+    <template v-else-if="aggregate && period">
       <div ref="pageEl" class="snapshot__page">
-        <header class="snapshot__header">
-          <h1>Team snapshot — {{ period.isoWeek }}</h1>
-          <p class="snapshot__frozen-at">Frozen {{ frozenAt ? new Date(frozenAt).toLocaleString() : '' }}</p>
-        </header>
+        <ReportHeader
+          eyebrow="Historical report"
+          :title="`Team snapshot — ${period.isoWeek}`"
+          :subtitle="frozenAt ? `Frozen ${new Date(frozenAt).toLocaleString()} · data is immutable` : undefined"
+        >
+          <template #actions>
+            <PulseButton variant="secondary" size="sm" @click="copyLink">Copy link</PulseButton>
+            <PulseButton variant="secondary" size="sm" @click="exportPdf">Export PDF</PulseButton>
+            <PulseButton variant="secondary" size="sm" :loading="exportingPng" @click="exportPng">Export PNG</PulseButton>
+          </template>
+        </ReportHeader>
 
-        <section class="snapshot__workload">
-          <h2>Workload</h2>
+        <ExecutiveSummary :points="summaryPoints" />
+
+        <section class="snapshot__stats">
+          <PulseStatCard label="Submitted" :value="`${aggregate.submissionStatus.submitted.length} / ${aggregate.submissionStatus.submitted.length + aggregate.submissionStatus.pending.length}`" />
+          <PulseStatCard label="Mean workload" :value="aggregate.workload.mean" />
+          <PulseStatCard label="Total delivered" :value="aggregate.totalDelivered" />
+          <PulseStatCard label="Total in-flight" :value="aggregate.totalInFlight" />
+        </section>
+
+        <PulseCard>
+          <template #header>Workload</template>
           <div class="snapshot__workload-stats">
             <StatGauge :value="aggregate.workload.mean" label="Mean" />
             <StatGauge :value="aggregate.workload.max" label="Max" />
             <StatGauge :value="aggregate.workload.min" label="Min" />
           </div>
           <DistributionChart :distribution="aggregate.workload.distribution" />
-        </section>
+        </PulseCard>
 
-        <section class="snapshot__totals">
-          <div class="snapshot__stat">
-            <span class="snapshot__stat-value">{{ aggregate.totalDelivered }}</span>
-            <span class="snapshot__stat-label">Total delivered</span>
+        <PulseCard>
+          <template #header>Project health</template>
+          <div class="snapshot__health">
+            <div class="snapshot__health-item" v-for="(count, status) in aggregate.projectHealth" :key="status">
+              <span class="snapshot__health-value">{{ count }}</span>
+              <span class="snapshot__health-label">{{ HEALTH_LABEL[status] }}</span>
+            </div>
           </div>
-          <div class="snapshot__stat">
-            <span class="snapshot__stat-value">{{ aggregate.totalInFlight }}</span>
-            <span class="snapshot__stat-label">Total in-flight</span>
-          </div>
-          <div class="snapshot__stat" v-for="(count, status) in aggregate.projectHealth" :key="status">
-            <span class="snapshot__stat-value">{{ count }}</span>
-            <span class="snapshot__stat-label">{{ HEALTH_LABEL[status] }}</span>
-          </div>
-        </section>
+        </PulseCard>
 
-        <section>
-          <h2>By profile</h2>
+        <PulseCard>
+          <template #header>By profile</template>
           <ProfileBreakdown :entries="aggregate.byProfile" />
-        </section>
+        </PulseCard>
 
-        <section v-if="aggregate.alerts.length" class="snapshot__alerts-section">
-          <h2>Top alerts</h2>
+        <PulseCard v-if="aggregate.alerts.length">
+          <template #header>Top alerts</template>
           <ul class="snapshot__alerts">
-            <li v-for="(alert, i) in aggregate.alerts.slice(0, 5)" :key="i" :class="`snapshot__alert--${alert.severity}`">
-              <span class="snapshot__alert-severity">{{ SEVERITY_LABEL[alert.severity] }}</span>
+            <li v-for="(alert, i) in aggregate.alerts.slice(0, 5)" :key="i">
+              <PulseBadge :variant="SEVERITY_VARIANT[alert.severity]">{{ SEVERITY_LABEL[alert.severity] }}</PulseBadge>
               {{ alert.content }}
             </li>
           </ul>
-        </section>
+        </PulseCard>
 
-        <section v-if="aggregate.opportunities.length">
-          <h2>Opportunities</h2>
-          <ul>
+        <PulseCard v-if="aggregate.opportunities.length">
+          <template #header>Opportunities</template>
+          <ul class="snapshot__opportunities">
             <li v-for="opp in aggregate.opportunities.slice(0, 5)" :key="opp.id">{{ opp.content }}</li>
           </ul>
-        </section>
+        </PulseCard>
       </div>
     </template>
   </main>
@@ -164,105 +178,76 @@ onMounted(() => {
 
 <style scoped>
 .snapshot {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--space-6) var(--space-4);
 }
-.snapshot__actions {
+.snapshot__skeleton {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 .snapshot__page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  background: white;
-  padding: 1.5rem;
+  gap: var(--space-6);
 }
-.snapshot__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-.snapshot__frozen-at {
-  color: #666;
-  font-size: 0.85rem;
+.snapshot__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-4);
 }
 .snapshot__workload-stats {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
-.snapshot__totals {
+.snapshot__health {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
+  gap: var(--space-6);
 }
-.snapshot__stat {
+.snapshot__health-item {
   display: flex;
   flex-direction: column;
 }
-.snapshot__stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+.snapshot__health-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
 }
-.snapshot__stat-label {
-  color: #666;
-  font-size: 0.85rem;
+.snapshot__health-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
-.snapshot__alerts {
+.snapshot__alerts,
+.snapshot__opportunities {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 .snapshot__alerts li {
-  border-radius: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  border-left: 4px solid #ccc;
-}
-.snapshot__alert--critical {
-  border-left-color: #ef4444;
-  background: #fee2e2;
-}
-.snapshot__alert--warn {
-  border-left-color: #f97316;
-  background: #ffedd5;
-}
-.snapshot__alert--info {
-  border-left-color: #3b82f6;
-  background: #dbeafe;
-}
-.snapshot__alert-severity {
-  font-weight: 600;
-  margin-right: 0.5rem;
-}
-.snapshot__error {
-  color: #991b1b;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 .snapshot__not-frozen {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: flex-start;
 }
 
 @media print {
-  .snapshot__actions {
-    display: none;
-  }
   .snapshot {
     max-width: none;
     padding: 0;
   }
-  .snapshot__page {
-    padding: 0;
-  }
-  section {
+  section,
+  .pulse-card {
     break-inside: avoid;
   }
 }

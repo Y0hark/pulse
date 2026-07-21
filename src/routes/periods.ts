@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Queryable } from '../db/pool.js';
-import { getPeriodById } from '../db/reports.js';
+import { getFrozenPeriodsForTeam, getPeriodById } from '../db/reports.js';
 import { freezeTeamPeriod, getFrozenSnapshot } from '../services/freeze.js';
 
 function parsePeriodId(raw: string): number | null {
@@ -31,6 +31,11 @@ export function createPeriodsRouter(db: Queryable): Router {
 
     const snapshot = await freezeTeamPeriod(db, req.teamId!, periodId);
     res.status(200).json({ period, snapshot });
+  });
+
+  router.get('/teams/:team/periods/history', async (req, res) => {
+    const history = await getFrozenPeriodsForTeam(db, req.teamId!, 24);
+    res.status(200).json({ history });
   });
 
   router.get('/teams/:team/periods/:id/snapshot', async (req, res) => {

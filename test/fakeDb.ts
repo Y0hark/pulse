@@ -53,6 +53,7 @@ interface TeamPeriodStatusRow {
   team_id: string;
   period_id: number;
   status: string;
+  frozen_at?: Date;
 }
 
 interface PeriodSnapshotRow {
@@ -181,8 +182,12 @@ export class FakeDb implements Queryable {
 
   freezePeriod(teamId: string, periodId: number): void {
     const existing = this.teamPeriodStatus.find((s) => s.team_id === teamId && s.period_id === periodId);
-    if (existing) existing.status = 'frozen';
-    else this.teamPeriodStatus.push({ team_id: teamId, period_id: periodId, status: 'frozen' });
+    if (existing) {
+      existing.status = 'frozen';
+      existing.frozen_at = new Date();
+    } else {
+      this.teamPeriodStatus.push({ team_id: teamId, period_id: periodId, status: 'frozen', frozen_at: new Date() });
+    }
   }
 
   async query(text: string, params: unknown[] = []): Promise<{ rows: any[] }> {
@@ -279,9 +284,14 @@ export class FakeDb implements Queryable {
 
     if (sql.startsWith('INSERT INTO team_period_status')) {
       const [teamId, periodId, status] = params as [string, number, string];
+      const frozenAt = status === 'frozen' ? new Date() : undefined;
       const existing = this.teamPeriodStatus.find((s) => s.team_id === teamId && s.period_id === periodId);
-      if (existing) existing.status = status;
-      else this.teamPeriodStatus.push({ team_id: teamId, period_id: periodId, status });
+      if (existing) {
+        existing.status = status;
+        existing.frozen_at = frozenAt;
+      } else {
+        this.teamPeriodStatus.push({ team_id: teamId, period_id: periodId, status, frozen_at: frozenAt });
+      }
       return { rows: [] };
     }
 
@@ -626,6 +636,19 @@ export class FakeDb implements Queryable {
           const report = this.reports.find((r) => r.period_id === p.id && r.user_id === userId && r.team_id === teamId);
           return { id: p.id, iso_week: p.iso_week, ends_on: p.ends_on, submitted_at: report?.submitted_at ?? null };
         });
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT p.id, p.iso_week, p.starts_on, p.ends_on, s.frozen_at')) {
+      const [teamId, limit] = params as [string, number];
+      const rows = this.teamPeriodStatus
+        .filter((s) => s.team_id === teamId && s.status === 'frozen')
+        .map((s) => {
+          const period = this.periods.find((p) => p.id === s.period_id)!;
+          return { ...period, frozen_at: s.frozen_at ?? new Date() };
+        })
+        .sort((a, b) => b.id - a.id)
+        .slice(0, limit);
       return { rows };
     }
 

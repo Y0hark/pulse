@@ -5,17 +5,45 @@ import StatGauge from '../../components/pulse/StatGauge.vue';
 import DistributionChart from '../../components/pulse/DistributionChart.vue';
 import ProfileBreakdown from '../../components/pulse/ProfileBreakdown.vue';
 import Leaderboard from '../../components/pulse/Leaderboard.vue';
+import ReportHeader from '../../components/pulse/ReportHeader.vue';
+import ExecutiveSummary from '../../components/pulse/ExecutiveSummary.vue';
+import { PulseBadge, PulseButton, PulseCard, PulseErrorState, PulseSkeleton, PulseStatCard, PulseTable } from '../../components/ui';
+import { useReportActions } from '../../composables/useReportActions';
+import { summarizeDashboard } from '../../utils/reportSummary';
 import * as api from '../../api/pulse';
 import type { AlertSeverity, LeaderboardEntry } from '../../api/pulse';
 
 const TEAM = 'ceva-logistics';
 
 const store = useDashboardStore();
+const { exportPdf, copyLink } = useReportActions();
 
 const SEVERITY_LABEL: Record<AlertSeverity, string> = { critical: '🔴 Critical', warn: '🟠 Warning', info: 'ℹ️ Info' };
+const SEVERITY_VARIANT: Record<AlertSeverity, 'danger' | 'warning' | 'accent'> = { critical: 'danger', warn: 'warning', info: 'accent' };
 const HEALTH_LABEL: Record<string, string> = { good: '🟢 Good', at_risk: '🟠 At risk', blocked: '🔴 Blocked' };
 
 const aggregate = computed(() => store.aggregate);
+const generatedAt = ref(new Date().toISOString());
+const summaryPoints = computed(() => (aggregate.value ? summarizeDashboard(aggregate.value) : []));
+
+const memberColumns = [
+  { key: 'displayName', label: 'Member' },
+  { key: 'status', label: 'Status', align: 'right' as const },
+];
+const memberRows = computed(() => {
+  if (!aggregate.value) return [];
+  const submitted = aggregate.value.submissionStatus.submitted.map((m) => ({
+    id: m.userId,
+    displayName: m.displayName ?? 'Unnamed member',
+    status: 'submitted',
+  }));
+  const pending = aggregate.value.submissionStatus.pending.map((m) => ({
+    id: m.userId,
+    displayName: m.displayName ?? 'Unnamed member',
+    status: 'pending',
+  }));
+  return [...pending, ...submitted];
+});
 
 const leaderboardEntries = ref<LeaderboardEntry[]>([]);
 const leaderboardOptIn = ref(false);
@@ -40,6 +68,11 @@ async function onToggleOptIn(optIn: boolean): Promise<void> {
   await loadLeaderboard();
 }
 
+function retry(): void {
+  generatedAt.value = new Date().toISOString();
+  void store.load(TEAM);
+}
+
 onMounted(() => {
   store.startPolling(TEAM);
   void loadLeaderboard();
@@ -51,165 +84,172 @@ onUnmounted(() => {
 
 <template>
   <main class="team-dashboard">
-    <p v-if="store.loading">Loading…</p>
-    <p v-else-if="store.error" class="team-dashboard__error">{{ store.error }}</p>
+    <div v-if="store.loading && !aggregate" class="team-dashboard__skeleton">
+      <PulseSkeleton variant="block" height="4rem" />
+      <PulseSkeleton variant="block" height="8rem" />
+      <PulseSkeleton variant="block" height="12rem" />
+    </div>
+
+    <PulseErrorState
+      v-else-if="store.error"
+      title="Failed to load report"
+      :description="store.error"
+      retryable
+      @retry="retry"
+    />
 
     <template v-else-if="aggregate && store.period">
-      <header class="team-dashboard__header">
-        <h1>Team dashboard — {{ store.period.isoWeek }}</h1>
-        <div class="team-dashboard__header-right">
-          <p class="team-dashboard__submission">
-            {{ aggregate.submissionStatus.submitted.length }} submitted ·
-            {{ aggregate.submissionStatus.pending.length }} pending
-          </p>
-          <router-link :to="`/periods/${store.period.id}/snapshot`">Freeze / view snapshot</router-link>
-          <router-link :to="{ path: '/walkthrough', query: { period: store.period.isoWeek } }">Walkthrough</router-link>
-        </div>
-      </header>
+      <ReportHeader
+        eyebrow="Weekly mission report"
+        :title="`Team report — ${store.period.isoWeek}`"
+        subtitle="Live view of this period's submissions, workload, and risks."
+        :generated-at="generatedAt"
+      >
+        <template #actions>
+          <PulseButton variant="secondary" size="sm" @click="copyLink">Copy link</PulseButton>
+          <PulseButton variant="secondary" size="sm" @click="exportPdf">Export PDF</PulseButton>
+          <router-link :to="`/periods/${store.period.id}/snapshot`">
+            <PulseButton variant="ghost" size="sm">Freeze / snapshot</PulseButton>
+          </router-link>
+          <router-link :to="{ path: '/walkthrough', query: { period: store.period.isoWeek } }">
+            <PulseButton variant="ghost" size="sm">Walkthrough</PulseButton>
+          </router-link>
+        </template>
+      </ReportHeader>
 
-      <section class="team-dashboard__workload">
-        <h2>Workload</h2>
+      <ExecutiveSummary :points="summaryPoints" />
+
+      <section class="team-dashboard__stats">
+        <PulseStatCard label="Submitted" :value="`${aggregate.submissionStatus.submitted.length} / ${aggregate.submissionStatus.submitted.length + aggregate.submissionStatus.pending.length}`" />
+        <PulseStatCard label="Mean workload" :value="aggregate.workload.mean" />
+        <PulseStatCard label="Total delivered" :value="aggregate.totalDelivered" />
+        <PulseStatCard label="Total in-flight" :value="aggregate.totalInFlight" />
+      </section>
+
+      <PulseCard>
+        <template #header>Workload</template>
         <div class="team-dashboard__workload-stats">
           <StatGauge :value="aggregate.workload.mean" label="Mean" />
           <StatGauge :value="aggregate.workload.max" label="Max" />
           <StatGauge :value="aggregate.workload.min" label="Min" />
         </div>
         <DistributionChart :distribution="aggregate.workload.distribution" />
-      </section>
+      </PulseCard>
 
-      <section class="team-dashboard__totals">
-        <div class="team-dashboard__stat">
-          <span class="team-dashboard__stat-value">{{ aggregate.totalDelivered }}</span>
-          <span class="team-dashboard__stat-label">Total delivered</span>
+      <PulseCard>
+        <template #header>Project health</template>
+        <div class="team-dashboard__health">
+          <div class="team-dashboard__health-item" v-for="(count, status) in aggregate.projectHealth" :key="status">
+            <span class="team-dashboard__health-value">{{ count }}</span>
+            <span class="team-dashboard__health-label">{{ HEALTH_LABEL[status] }}</span>
+          </div>
         </div>
-        <div class="team-dashboard__stat">
-          <span class="team-dashboard__stat-value">{{ aggregate.totalInFlight }}</span>
-          <span class="team-dashboard__stat-label">Total in-flight</span>
-        </div>
-        <div class="team-dashboard__stat" v-for="(count, status) in aggregate.projectHealth" :key="status">
-          <span class="team-dashboard__stat-value">{{ count }}</span>
-          <span class="team-dashboard__stat-label">{{ HEALTH_LABEL[status] }}</span>
-        </div>
-      </section>
+      </PulseCard>
 
-      <section>
-        <h2>By profile</h2>
+      <PulseCard>
+        <template #header>By profile</template>
         <ProfileBreakdown :entries="aggregate.byProfile" />
-      </section>
+      </PulseCard>
 
-      <section v-if="aggregate.alerts.length">
-        <h2>Alerts</h2>
+      <PulseCard v-if="aggregate.alerts.length">
+        <template #header>Alerts</template>
         <ul class="team-dashboard__alerts">
-          <li v-for="(alert, i) in aggregate.alerts" :key="i" :class="`team-dashboard__alert--${alert.severity}`">
-            <span class="team-dashboard__alert-severity">{{ SEVERITY_LABEL[alert.severity] }}</span>
+          <li v-for="(alert, i) in aggregate.alerts" :key="i">
+            <PulseBadge :variant="SEVERITY_VARIANT[alert.severity]">{{ SEVERITY_LABEL[alert.severity] }}</PulseBadge>
             {{ alert.content }}
           </li>
         </ul>
-      </section>
+      </PulseCard>
 
-      <section v-if="aggregate.opportunities.length">
-        <h2>Opportunities</h2>
-        <ul>
+      <PulseCard v-if="aggregate.opportunities.length">
+        <template #header>Opportunities</template>
+        <ul class="team-dashboard__opportunities">
           <li v-for="opp in aggregate.opportunities" :key="opp.id">{{ opp.content }}</li>
         </ul>
-      </section>
+      </PulseCard>
 
-      <section v-if="aggregate.submissionStatus.pending.length">
-        <h2>Pending</h2>
-        <ul class="team-dashboard__pending">
-          <li v-for="member in aggregate.submissionStatus.pending" :key="member.userId">
-            {{ member.displayName ?? 'Unnamed member' }}
-          </li>
-        </ul>
-      </section>
+      <PulseCard>
+        <template #header>Submissions</template>
+        <PulseTable :columns="memberColumns" :rows="memberRows">
+          <template #cell-status="{ value }">
+            <PulseBadge :variant="value === 'submitted' ? 'success' : 'warning'">
+              {{ value === 'submitted' ? 'Submitted' : 'Pending' }}
+            </PulseBadge>
+          </template>
+        </PulseTable>
+      </PulseCard>
 
-      <section>
+      <PulseCard>
         <p v-if="leaderboardError" class="team-dashboard__error">{{ leaderboardError }}</p>
         <Leaderboard v-else :entries="leaderboardEntries" :opted-in="leaderboardOptIn" @toggle-opt-in="onToggleOptIn" />
-      </section>
+      </PulseCard>
     </template>
   </main>
 </template>
 
 <style scoped>
 .team-dashboard {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--space-6) var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-6);
 }
-.team-dashboard__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-.team-dashboard__header-right {
+.team-dashboard__skeleton {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
+  gap: var(--space-4);
 }
-.team-dashboard__submission {
-  color: #666;
+.team-dashboard__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-4);
 }
 .team-dashboard__workload-stats {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
-.team-dashboard__totals {
+.team-dashboard__health {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
+  gap: var(--space-6);
 }
-.team-dashboard__stat {
+.team-dashboard__health-item {
   display: flex;
   flex-direction: column;
 }
-.team-dashboard__stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+.team-dashboard__health-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
 }
-.team-dashboard__stat-label {
-  color: #666;
-  font-size: 0.85rem;
+.team-dashboard__health-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 .team-dashboard__alerts,
-.team-dashboard__pending {
+.team-dashboard__opportunities {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 .team-dashboard__alerts li {
-  border-radius: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  border-left: 4px solid #ccc;
-}
-.team-dashboard__alert--critical {
-  border-left-color: #ef4444;
-  background: #fee2e2;
-}
-.team-dashboard__alert--warn {
-  border-left-color: #f97316;
-  background: #ffedd5;
-}
-.team-dashboard__alert--info {
-  border-left-color: #3b82f6;
-  background: #dbeafe;
-}
-.team-dashboard__alert-severity {
-  font-weight: 600;
-  margin-right: 0.5rem;
-}
-.team-dashboard__pending li {
-  color: #666;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 .team-dashboard__error {
-  color: #991b1b;
+  color: var(--color-danger);
+}
+
+@media print {
+  .team-dashboard {
+    max-width: none;
+  }
 }
 </style>

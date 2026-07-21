@@ -11,6 +11,9 @@ import MissionCreateView from './views/pulse/MissionCreateView.vue';
 import MissionDetailView from './views/pulse/MissionDetailView.vue';
 import MissionEditView from './views/pulse/MissionEditView.vue';
 import ReportsHomeView from './views/pulse/ReportsHomeView.vue';
+import ReportHistoryView from './views/pulse/ReportHistoryView.vue';
+import CompletionReportView from './views/pulse/CompletionReportView.vue';
+import ConsolidatedReportView from './views/pulse/ConsolidatedReportView.vue';
 import SettingsView from './views/pulse/SettingsView.vue';
 import HelpView from './views/pulse/HelpView.vue';
 import NotFoundView from './views/pulse/NotFoundView.vue';
@@ -62,6 +65,24 @@ export const router = createRouter({
           meta: { title: 'Submission history' },
         },
         { path: 'reports', name: 'reports', component: ReportsHomeView, meta: { title: 'Reports' } },
+        {
+          path: 'reports/completion',
+          name: 'reports-completion',
+          component: CompletionReportView,
+          meta: { title: 'Delay / completion report' },
+        },
+        {
+          path: 'reports/consolidated',
+          name: 'reports-consolidated',
+          component: ConsolidatedReportView,
+          meta: { title: 'Consolidated report' },
+        },
+        {
+          path: 'reports/history',
+          name: 'reports-history',
+          component: ReportHistoryView,
+          meta: { title: 'Report history' },
+        },
         {
           path: 'reports/:reportId',
           name: 'personal-report',

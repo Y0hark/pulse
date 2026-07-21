@@ -437,4 +437,77 @@ export function removeMissionMember(slug: string, userId: string): Promise<void>
   });
 }
 
+// --- Premium reports ---
+
+export type CompletionStatus = 'on_time' | 'late' | 'missing';
+
+export interface CompletionRow {
+  userId: string;
+  displayName: string | null;
+  profileCode: string | null;
+  profileLabel: string | null;
+  status: CompletionStatus;
+  submittedAt: string | null;
+}
+
+export interface CompletionReport {
+  deadline: string | null;
+  rows: CompletionRow[];
+  summary: { onTime: number; late: number; missing: number; completionPct: number };
+}
+
+export interface CompletionResponse {
+  period: ReportPeriod;
+  completion: CompletionReport;
+}
+
+export function getCompletionReport(team: string, isoWeek?: string): Promise<CompletionResponse> {
+  const query = isoWeek ? `?period=${encodeURIComponent(isoWeek)}` : '';
+  return request(`/teams/${team}/reports/completion${query}`);
+}
+
+export interface FrozenPeriodEntry {
+  period: ReportPeriod;
+  frozenAt: string;
+}
+
+export function getPeriodHistory(team: string): Promise<{ history: FrozenPeriodEntry[] }> {
+  return request(`/teams/${team}/periods/history`);
+}
+
+export interface ConsolidatedMissionRow {
+  missionId: string;
+  missionName: string;
+  missionSlug: string;
+  headcount: number;
+  submitted: number;
+  meanWorkload: number;
+  totalDelivered: number;
+  totalInFlight: number;
+  completionPct: number;
+}
+
+export interface ConsolidatedReport {
+  missions: ConsolidatedMissionRow[];
+  totals: {
+    missionCount: number;
+    headcount: number;
+    totalDelivered: number;
+    totalInFlight: number;
+    meanWorkload: number;
+    completionPct: number;
+  };
+  topAlerts: (AlertDraft & { missionName: string })[];
+}
+
+export interface ConsolidatedReportResponse {
+  period: ReportPeriod;
+  report: ConsolidatedReport;
+}
+
+export function getConsolidatedReport(isoWeek?: string): Promise<ConsolidatedReportResponse> {
+  const query = isoWeek ? `?period=${encodeURIComponent(isoWeek)}` : '';
+  return request(`/missions/consolidated-report${query}`);
+}
+
 export { ApiError };

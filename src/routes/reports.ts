@@ -15,6 +15,7 @@ import {
 import { getUserById } from '../db/users.js';
 import { buildDraftFromPrevious } from '../services/prefill.js';
 import { invalidateTeamDashboard } from '../services/aggregation.js';
+import { getCompletionReport } from '../services/completion.js';
 import { getTeamWalkthrough } from '../services/walkthrough.js';
 import type { ReportWritePayload } from '../reports/types.js';
 
@@ -152,8 +153,19 @@ export function createReportsRouter(db: Queryable): Router {
     res.status(200).json({ periods });
   });
 
-  // Registered after the /reports/mine* routes above: ':reportId' would otherwise
-  // greedily match the literal 'mine' segment first.
+  router.get('/teams/:team/reports/completion', async (req, res) => {
+    const period = await resolvePeriod(db, req.query.period);
+    if (!period) {
+      res.status(404).json({ error: 'period_not_found' });
+      return;
+    }
+
+    const completion = await getCompletionReport(db, req.teamId!, period.id);
+    res.status(200).json({ period, completion });
+  });
+
+  // Registered after the /reports/mine* and /reports/completion routes above: ':reportId'
+  // would otherwise greedily match those literal segments first.
   router.get('/teams/:team/reports/:reportId', async (req, res) => {
     const found = await getReportById(db, req.params.reportId);
     // Same 404 whether the report doesn't exist or belongs to another team: avoids

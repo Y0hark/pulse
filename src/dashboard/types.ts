@@ -94,3 +94,55 @@ export interface TeamFreezeConfig {
   freezeTime: string;
   freezeMode: 'auto' | 'manual' | 'both';
 }
+
+/** One frozen period in a team's history, for the historical-report list view. */
+export interface FrozenPeriodSummary {
+  period: import('../reports/types.js').ReportPeriod;
+  frozenAt: string;
+}
+
+export type CompletionStatus = 'on_time' | 'late' | 'missing';
+
+export interface CompletionRow {
+  userId: string;
+  displayName: string | null;
+  profileCode: string | null;
+  profileLabel: string | null;
+  status: CompletionStatus;
+  submittedAt: string | null;
+}
+
+/** Delay/completion report for one team+period: who submitted on time, who was late, who is
+ * still missing, measured against that team's freeze deadline for the period. */
+export interface CompletionReport {
+  deadline: string | null;
+  rows: CompletionRow[];
+  summary: { onTime: number; late: number; missing: number; completionPct: number };
+}
+
+export interface ConsolidatedMissionRow {
+  missionId: string;
+  missionName: string;
+  missionSlug: string;
+  headcount: number;
+  submitted: number;
+  meanWorkload: number;
+  totalDelivered: number;
+  totalInFlight: number;
+  completionPct: number;
+}
+
+/** Cross-mission rollup for one period, built by aggregating every active mission's own
+ * dashboard aggregate — the "consolidated report" seen by someone overseeing multiple missions. */
+export interface ConsolidatedReport {
+  missions: ConsolidatedMissionRow[];
+  totals: {
+    missionCount: number;
+    headcount: number;
+    totalDelivered: number;
+    totalInFlight: number;
+    meanWorkload: number;
+    completionPct: number;
+  };
+  topAlerts: { content: string; severity: AlertSeverity; missionName: string }[];
+}
