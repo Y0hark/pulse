@@ -2,6 +2,7 @@ import express, { type Express } from 'express';
 import type { AuthProvider } from './auth/types.js';
 import type { Queryable } from './db/pool.js';
 import { createAuthRouter } from './routes/auth.js';
+import { createDashboardRouter } from './routes/dashboard.js';
 import { createMeRouter } from './routes/me.js';
 import { createReportsRouter } from './routes/reports.js';
 import { requireAuth } from './middleware/requireAuth.js';
@@ -20,6 +21,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(createMeRouter(deps.authProvider, deps.db));
   app.use('/teams/:team', requireAuth(deps.authProvider), requireTeamMember(deps.db));
   app.use(createReportsRouter(deps.db));
+  app.use(createDashboardRouter(deps.db));
 
   // Example of a protected route, to be extended by later Pulse tickets.
   app.get('/protected/ping', requireAuth(deps.authProvider), (req, res) => {

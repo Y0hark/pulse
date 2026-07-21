@@ -118,4 +118,58 @@ export function getReport(team: string, reportId: string): Promise<ReportViewRes
   return request(`/teams/${team}/reports/${encodeURIComponent(reportId)}`);
 }
 
+export type WorkloadBucket = 'low' | 'steady' | 'high' | 'critical';
+
+export interface WorkloadDistributionBucket {
+  bucket: WorkloadBucket;
+  count: number;
+}
+
+export interface WorkloadStats {
+  mean: number;
+  max: number;
+  min: number;
+  distribution: WorkloadDistributionBucket[];
+}
+
+export interface ProjectHealthCounts {
+  good: number;
+  at_risk: number;
+  blocked: number;
+}
+
+export interface ProfileBreakdownEntry {
+  code: string;
+  label: string;
+  headcount: number;
+  meanWorkload: number;
+  delivered: number;
+}
+
+export interface MemberSummary {
+  userId: string;
+  displayName: string | null;
+}
+
+export interface DashboardAggregate {
+  workload: WorkloadStats;
+  totalDelivered: number;
+  totalInFlight: number;
+  projectHealth: ProjectHealthCounts;
+  byProfile: ProfileBreakdownEntry[];
+  alerts: AlertDraft[];
+  opportunities: (OpportunityDraft & { id: string })[];
+  submissionStatus: { submitted: MemberSummary[]; pending: MemberSummary[] };
+}
+
+export interface DashboardResponse {
+  period: ReportPeriod;
+  aggregate: DashboardAggregate;
+}
+
+export function getTeamDashboard(team: string, isoWeek?: string): Promise<DashboardResponse> {
+  const query = isoWeek ? `?period=${encodeURIComponent(isoWeek)}` : '';
+  return request(`/teams/${team}/dashboard${query}`);
+}
+
 export { ApiError };

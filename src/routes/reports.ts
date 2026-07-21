@@ -13,6 +13,7 @@ import {
 } from '../db/reports.js';
 import { getUserById } from '../db/users.js';
 import { buildDraftFromPrevious } from '../services/prefill.js';
+import { invalidateTeamDashboard } from '../services/aggregation.js';
 import type { ReportWritePayload } from '../reports/types.js';
 
 async function resolvePeriod(db: Queryable, isoWeek: unknown) {
@@ -92,6 +93,7 @@ export function createReportsRouter(db: Queryable): Router {
     }
 
     const report = await upsertReport(db, req.userId!, req.teamId!, period.id, payload);
+    invalidateTeamDashboard(req.teamId!, period.id);
     res.status(200).json({ period, report });
   });
 
@@ -113,6 +115,7 @@ export function createReportsRouter(db: Queryable): Router {
       res.status(404).json({ error: 'report_not_found' });
       return;
     }
+    invalidateTeamDashboard(req.teamId!, period.id);
     res.status(200).json({ period, report });
   });
 
