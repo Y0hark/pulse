@@ -26,6 +26,7 @@ interface ReportState {
   saving: boolean;
   submitting: boolean;
   lastSavedAt: string | null;
+  justSubmitted: boolean;
   error: string | null;
   autosaveTimer: ReturnType<typeof setTimeout> | null;
   gamification: GamificationSummary | null;
@@ -33,7 +34,7 @@ interface ReportState {
 
 export const useReportStore = defineStore('report', {
   state: (): ReportState => ({
-    team: 'ceva-logistics',
+    team: '',
     period: null,
     status: 'open',
     draft: emptyDraft(),
@@ -41,6 +42,7 @@ export const useReportStore = defineStore('report', {
     saving: false,
     submitting: false,
     lastSavedAt: null,
+    justSubmitted: false,
     error: null,
     autosaveTimer: null,
     gamification: null,
@@ -52,14 +54,17 @@ export const useReportStore = defineStore('report', {
 
   actions: {
     async loadCurrentPeriod(team: string): Promise<void> {
+      if (!team) return;
       this.team = team;
       this.loading = true;
       this.error = null;
+      this.justSubmitted = false;
       try {
         const res = await api.getCurrentPeriod(team);
         this.period = res.period;
         this.status = res.status;
         this.draft = res.draft;
+        this.justSubmitted = 'submittedAt' in res.draft && res.draft.submittedAt !== null;
       } catch (err) {
         this.error = err instanceof Error ? err.message : 'Failed to load current period';
       } finally {
@@ -82,6 +87,7 @@ export const useReportStore = defineStore('report', {
     /** Call after any field mutation. Debounces the actual PUT so keystrokes don't each fire a request. */
     scheduleAutosave(): void {
       if (this.isFrozen) return;
+      this.justSubmitted = false;
       if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
       this.autosaveTimer = setTimeout(() => {
         void this.save();
@@ -112,6 +118,7 @@ export const useReportStore = defineStore('report', {
         await api.putMyReport(this.team, this.period.isoWeek, this.draft);
         const res = await api.submitMyReport(this.team, this.period.isoWeek);
         this.lastSavedAt = res.report.updatedAt;
+        this.justSubmitted = true;
         void this.loadGamification();
       } catch (err) {
         this.error = err instanceof Error ? err.message : 'Submit failed';

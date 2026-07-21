@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import AppShell from './layout/AppShell.vue';
 import ReportFormView from './views/pulse/ReportFormView.vue';
+import SubmissionHistoryView from './views/pulse/SubmissionHistoryView.vue';
 import PersonalReportView from './views/pulse/PersonalReportView.vue';
 import TeamDashboardView from './views/pulse/TeamDashboardView.vue';
 import SnapshotView from './views/pulse/SnapshotView.vue';
@@ -53,6 +54,12 @@ export const router = createRouter({
           name: 'weekly-pulse',
           component: ReportFormView,
           meta: { title: 'Weekly Pulse' },
+        },
+        {
+          path: 'weekly-pulse/history',
+          name: 'submission-history',
+          component: SubmissionHistoryView,
+          meta: { title: 'Submission history' },
         },
         { path: 'reports', name: 'reports', component: ReportsHomeView, meta: { title: 'Reports' } },
         {

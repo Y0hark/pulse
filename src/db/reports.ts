@@ -117,12 +117,14 @@ function toSnapshot(row: any): PeriodSnapshot {
 
 export interface SubmissionHistoryRow {
   periodId: number;
+  isoWeek: string;
   endsOn: string;
   submittedAt: string | null;
 }
 
 /** A user's submission history for one team, most recent period first, capped at `limit` — the
- * raw material for streak/XP computation (src/services/gamification.ts turns it into deadlines). */
+ * raw material for streak/XP computation (src/services/gamification.ts turns it into deadlines)
+ * and for the user-facing history list (src/routes/reports.ts `/reports/mine/history`). */
 export async function getSubmissionHistory(
   db: Queryable,
   userId: string,
@@ -131,7 +133,7 @@ export async function getSubmissionHistory(
   limit = 12,
 ): Promise<SubmissionHistoryRow[]> {
   const result = await db.query(
-    `SELECT p.id, p.ends_on, r.submitted_at
+    `SELECT p.id, p.iso_week, p.ends_on, r.submitted_at
      FROM report_periods p
      LEFT JOIN reports r ON r.period_id = p.id AND r.user_id = $1 AND r.team_id = $2
      WHERE p.id <= $3
@@ -139,7 +141,12 @@ export async function getSubmissionHistory(
      LIMIT $4`,
     [userId, teamId, uptoPeriodId, limit],
   );
-  return result.rows.map((r: any) => ({ periodId: r.id, endsOn: r.ends_on, submittedAt: r.submitted_at }));
+  return result.rows.map((r: any) => ({
+    periodId: r.id,
+    isoWeek: r.iso_week,
+    endsOn: r.ends_on,
+    submittedAt: r.submitted_at,
+  }));
 }
 
 export async function getReportForPeriod(

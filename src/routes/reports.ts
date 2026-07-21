@@ -7,6 +7,7 @@ import {
   getPreviousReport,
   getReportById,
   getReportForPeriod,
+  getSubmissionHistory,
   getTeamPeriodStatus,
   submitReport,
   upsertReport,
@@ -129,6 +130,26 @@ export function createReportsRouter(db: Queryable): Router {
     }
     invalidateTeamDashboard(req.teamId!, period.id);
     res.status(200).json({ period, report });
+  });
+
+  router.get('/teams/:team/reports/mine/history', async (req, res) => {
+    const anchor = await getCurrentPeriod(db);
+    if (!anchor) {
+      res.status(200).json({ periods: [] });
+      return;
+    }
+
+    const rows = await getSubmissionHistory(db, req.userId!, req.teamId!, anchor.id, 12);
+    const now = new Date();
+    const periods = rows.map((row) => ({
+      periodId: row.periodId,
+      isoWeek: row.isoWeek,
+      endsOn: row.endsOn,
+      submittedAt: row.submittedAt,
+      status: row.submittedAt ? 'submitted' : new Date(row.endsOn) < now ? 'missed' : 'open',
+    }));
+
+    res.status(200).json({ periods });
   });
 
   // Registered after the /reports/mine* routes above: ':reportId' would otherwise

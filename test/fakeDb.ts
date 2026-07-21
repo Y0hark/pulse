@@ -616,7 +616,7 @@ export class FakeDb implements Queryable {
       return { rows };
     }
 
-    if (sql.startsWith('SELECT p.id, p.ends_on, r.submitted_at')) {
+    if (sql.startsWith('SELECT p.id, p.iso_week, p.ends_on, r.submitted_at')) {
       const [userId, teamId, uptoPeriodId, limit] = params as [string, string, number, number];
       const rows = this.periods
         .filter((p) => p.id <= uptoPeriodId)
@@ -624,7 +624,7 @@ export class FakeDb implements Queryable {
         .slice(0, limit)
         .map((p) => {
           const report = this.reports.find((r) => r.period_id === p.id && r.user_id === userId && r.team_id === teamId);
-          return { id: p.id, ends_on: p.ends_on, submitted_at: report?.submitted_at ?? null };
+          return { id: p.id, iso_week: p.iso_week, ends_on: p.ends_on, submitted_at: report?.submitted_at ?? null };
         });
       return { rows };
     }

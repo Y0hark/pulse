@@ -292,3 +292,48 @@ describe('prefill from a previous week', () => {
     expect(currentRes.body.draft.majorTasksDid).toEqual([]);
   });
 });
+
+describe('GET /teams/:team/reports/mine/history', () => {
+  it('classifies each past period as submitted, missed, or still open', async () => {
+    const db = new FakeDb();
+    const team = db.seedTeam('ceva-logistics');
+    db.addMember(team.id, 'fake-user-1');
+    const submittedPeriod = db.seedPeriod('2026-W27', '2026-06-29', '2026-07-06');
+    db.seedPeriod('2026-W28', '2026-07-06', '2026-07-13');
+    db.seedPeriod('2026-W29', '2026-07-20', '2026-07-27');
+
+    const authProvider = new FakeAuthProvider();
+    const app = createApp({ authProvider, db });
+    await request(app).get('/auth/callback?token=valid-token').expect(302);
+
+    await request(app)
+      .put(`/teams/ceva-logistics/reports/mine?period=${submittedPeriod.iso_week}`)
+      .send({
+        workload: 50,
+        deliveredCnt: 0,
+        inflightCnt: 0,
+        projectCards: [],
+        majorTasksDid: [],
+        majorTasksToDo: [],
+        alerts: [],
+        opportunities: [],
+      })
+      .expect(200);
+    await request(app)
+      .post(`/teams/ceva-logistics/reports/mine/submit?period=${submittedPeriod.iso_week}`)
+      .expect(200);
+
+    const res = await request(app).get('/teams/ceva-logistics/reports/mine/history').expect(200);
+
+    expect(res.body.periods).toEqual([
+      expect.objectContaining({ isoWeek: '2026-W29', status: 'open' }),
+      expect.objectContaining({ isoWeek: '2026-W28', status: 'missed' }),
+      expect.objectContaining({ isoWeek: '2026-W27', status: 'submitted' }),
+    ]);
+  });
+
+  it('403s when the caller is not a member of the team', async () => {
+    const { app } = await setup();
+    await request(app).get('/teams/some-other-team/reports/mine/history').expect(403);
+  });
+});

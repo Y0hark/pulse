@@ -80,6 +80,20 @@ export function getMyReport(team: string, isoWeek: string): Promise<{ period: Re
   return request(`/teams/${team}/reports/mine?period=${encodeURIComponent(isoWeek)}`);
 }
 
+export type SubmissionStatus = 'submitted' | 'missed' | 'open';
+
+export interface SubmissionHistoryEntry {
+  periodId: number;
+  isoWeek: string;
+  endsOn: string;
+  submittedAt: string | null;
+  status: SubmissionStatus;
+}
+
+export function getSubmissionHistory(team: string): Promise<{ periods: SubmissionHistoryEntry[] }> {
+  return request(`/teams/${team}/reports/mine/history`);
+}
+
 export function putMyReport(
   team: string,
   isoWeek: string,

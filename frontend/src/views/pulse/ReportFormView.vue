@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue';
 import { useReportStore } from '../../stores/report';
+import { useSessionStore } from '../../stores/session';
 import WorkloadSlider from '../../components/pulse/WorkloadSlider.vue';
 import ProjectCard from '../../components/pulse/ProjectCard.vue';
 import RepeatableList from '../../components/pulse/RepeatableList.vue';
 import StreakBadge from '../../components/pulse/StreakBadge.vue';
 import CompletionRing from '../../components/pulse/CompletionRing.vue';
+import { PulseButton, PulseEmptyState, PulseErrorState, PulseSkeleton } from '../../components/ui';
 import type { AlertDraft, AlertSeverity, OpportunityDraft, OpportunityType, ProjectCardDraft } from '../../api/pulse';
 
-const TEAMS = ['ceva-logistics'];
 const OPPORTUNITY_TYPES: { value: OpportunityType; label: string }[] = [
   { value: 'open_position', label: 'Open position' },
   { value: 'new_project', label: 'New project' },
@@ -19,17 +20,20 @@ const OPPORTUNITY_TYPES: { value: OpportunityType; label: string }[] = [
 const SEVERITIES: AlertSeverity[] = ['info', 'warn', 'critical'];
 
 const store = useReportStore();
+const session = useSessionStore();
+
+function load(): void {
+  if (session.currentTeamSlug) void store.loadCurrentPeriod(session.currentTeamSlug);
+}
 
 onMounted(() => {
-  void store.loadCurrentPeriod('ceva-logistics');
+  // Loading the session (when not already loaded) sets currentTeamSlug reactively, which the
+  // watch below picks up — calling load() here too would double-fetch the current period.
+  if (session.loaded) load();
+  else void session.load();
 });
 
-watch(
-  () => store.team,
-  (team) => {
-    void store.loadCurrentPeriod(team);
-  },
-);
+watch(() => session.currentTeamSlug, load);
 
 function onFieldChange(): void {
   store.scheduleAutosave();
@@ -49,18 +53,46 @@ function newOpportunity(): OpportunityDraft {
 </script>
 
 <template>
-  <main class="report-form" v-if="store.period">
+  <PulseEmptyState
+    v-if="session.loaded && !session.currentTeamSlug"
+    icon="🧭"
+    title="No mission assigned"
+    description="Ask an admin to add you to a mission before submitting a weekly pulse."
+  />
+
+  <div v-else-if="!session.loaded || (store.loading && !store.period)" class="report-form">
+    <PulseSkeleton variant="block" height="4rem" />
+    <PulseSkeleton variant="block" height="8rem" />
+    <PulseSkeleton variant="block" height="8rem" />
+  </div>
+
+  <PulseErrorState
+    v-else-if="store.error && !store.period"
+    description="We couldn't load this week's submission. Check your connection and try again."
+    retryable
+    @retry="load"
+  />
+
+  <main class="report-form" v-else-if="store.period">
     <header class="report-form__header">
-      <h1>Weekly check-in — {{ store.period.isoWeek }}</h1>
-      <select v-model="store.team" :disabled="store.loading">
-        <option v-for="t in TEAMS" :key="t" :value="t">{{ t }}</option>
-      </select>
-      <p v-if="store.isFrozen" class="report-form__frozen-banner">
-        This period is frozen — changes can no longer be saved.
-      </p>
-      <p v-if="store.error" class="report-form__error">{{ store.error }}</p>
-      <p v-if="store.saving" class="report-form__status">Saving…</p>
+      <div>
+        <h1>Weekly check-in — {{ store.period.isoWeek }}</h1>
+        <p v-if="session.currentMission" class="report-form__mission">{{ session.currentMission.name }}</p>
+      </div>
+      <router-link :to="{ name: 'submission-history' }">
+        <PulseButton variant="secondary" size="sm">View history</PulseButton>
+      </router-link>
     </header>
+
+    <p v-if="store.isFrozen" class="report-form__frozen-banner">
+      This period is frozen — changes can no longer be saved.
+    </p>
+    <p v-if="store.justSubmitted" class="report-form__success-banner">
+      ✓ Submitted{{ store.lastSavedAt ? ` at ${new Date(store.lastSavedAt).toLocaleString()}` : '' }} — you can keep
+      editing until the period is frozen.
+    </p>
+    <p v-if="store.error" class="report-form__error">{{ store.error }}</p>
+    <p v-if="store.saving" class="report-form__status">Saving…</p>
 
     <section v-if="store.gamification" class="report-form__gamification">
       <StreakBadge :streak="store.gamification.streak" :xp="store.gamification.xp" :badges="store.gamification.badges" />
@@ -199,12 +231,11 @@ function newOpportunity(): OpportunityDraft {
     </section>
 
     <footer>
-      <button type="button" :disabled="store.isFrozen || store.submitting" @click="store.submit()">
+      <PulseButton :disabled="store.isFrozen || store.submitting" @click="store.submit()">
         {{ store.submitting ? 'Submitting…' : 'Submit' }}
-      </button>
+      </PulseButton>
     </footer>
   </main>
-  <p v-else>Loading…</p>
 </template>
 
 <style scoped>
@@ -215,6 +246,12 @@ function newOpportunity(): OpportunityDraft {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+.report-form__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
 }
 .report-form__gamification {
   display: flex;
@@ -245,6 +282,17 @@ function newOpportunity(): OpportunityDraft {
   color: #991b1b;
   padding: 0.5rem;
   border-radius: 0.25rem;
+}
+.report-form__success-banner {
+  background: #dcfce7;
+  color: #166534;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+.report-form__mission {
+  margin: 0.25rem 0 0;
+  color: #666;
+  font-size: 0.9rem;
 }
 .report-form__error {
   color: #991b1b;
