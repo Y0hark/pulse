@@ -46,7 +46,8 @@ Stack : **Cloudflare Pages** (front) · **Render** (API, via Docker) · **Neon**
 3. Variable d'environnement de build : `VITE_API_BASE_URL` = l'URL Render de l'étape 2
    (ex. `https://pulse-api.onrender.com`).
 4. Déployer. Chaque push sur `main` redéclenche un build automatique.
-   (`frontend/public/_redirects` gère déjà le fallback SPA pour Vue Router.)
+   (`frontend/wrangler.jsonc` gère déjà le fallback SPA pour Vue Router, via le mode
+   `not_found_handling: "single-page-application"` de Cloudflare Workers Assets.)
 
 ## 4. cron-job.org — freeze hebdomadaire
 
