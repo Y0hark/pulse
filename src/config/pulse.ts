@@ -17,6 +17,13 @@ export interface PulseConfig {
   cookieName: string;
   isProduction: boolean;
   gamification: GamificationConfig;
+  /** Frontend origin allowed to call the API with credentials (Cloudflare Pages URL in prod). */
+  corsOrigin?: string;
+  mailProvider: 'console' | 'resend';
+  resendApiKey?: string;
+  mailFrom: string;
+  /** Shared secret cron-job.org sends to authorize hitting /internal/tasks/freeze. */
+  internalTaskSecret?: string;
 }
 
 function parseIntList(raw: string | undefined, fallback: number[]): number[] {
@@ -47,6 +54,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PulseConfig {
     sessionTtlMinutes: Number(env.SESSION_TTL_MINUTES ?? 60 * 24 * 7),
     cookieName: env.SESSION_COOKIE_NAME ?? 'pulse_session',
     isProduction: env.NODE_ENV === 'production',
+    corsOrigin: env.CORS_ORIGIN,
+    mailProvider: env.RESEND_API_KEY ? 'resend' : 'console',
+    resendApiKey: env.RESEND_API_KEY,
+    mailFrom: env.MAIL_FROM ?? 'Pulse <pulse@tnpconsultants.com>',
+    internalTaskSecret: env.INTERNAL_TASK_SECRET,
     gamification: {
       onTimeXp: Number(env.GAMIFICATION_ON_TIME_XP ?? 10),
       lateXpDecayPerHour: Number(env.GAMIFICATION_LATE_XP_DECAY_PER_HOUR ?? 1),

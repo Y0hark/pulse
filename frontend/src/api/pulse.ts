@@ -61,8 +61,13 @@ class ApiError extends Error {
   }
 }
 
+// In production the frontend (Cloudflare Pages) and API (Render) are on different
+// domains, so requests need an absolute base URL. Empty in dev, where Vite proxies
+// these paths to the local API instead (see vite.config.ts).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     ...init,

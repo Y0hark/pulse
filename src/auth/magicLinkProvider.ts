@@ -87,6 +87,7 @@ export class MagicLinkAuthProvider implements AuthProvider {
     setCookie(res, config.cookieName, sessionId, {
       maxAgeSeconds: config.sessionTtlMinutes * 60,
       secure: config.isProduction,
+      crossSite: config.isProduction,
     });
   }
 
@@ -107,6 +108,9 @@ export class MagicLinkAuthProvider implements AuthProvider {
   async destroy(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const sessionId = readCookie(req, this.deps.config.cookieName);
     if (sessionId) await this.deps.sessionStore.destroy(sessionId);
-    clearCookie(res, this.deps.config.cookieName, { secure: this.deps.config.isProduction });
+    clearCookie(res, this.deps.config.cookieName, {
+      secure: this.deps.config.isProduction,
+      crossSite: this.deps.config.isProduction,
+    });
   }
 }

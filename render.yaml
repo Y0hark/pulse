@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: pulse-api
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false # Neon connection string, add ?sslmode=require
+      - key: APP_BASE_URL
+        sync: false # this API's own public Render URL, e.g. https://pulse-api.onrender.com
+      - key: CORS_ORIGIN
+        sync: false # Cloudflare Pages URL, e.g. https://pulse.pages.dev
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false # e.g. "Pulse <pulse@yourdomain.com>", must be a Resend-verified domain
+      - key: INTERNAL_TASK_SECRET
+        sync: false # random string, also configured in cron-job.org's request header
+      - key: ALLOWED_DOMAINS
+        sync: false # optional: comma-separated list of email domains allowed to sign in

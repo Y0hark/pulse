@@ -1,11 +1,19 @@
-import { loadConfig } from './config/pulse.js';
+import { loadConfig, type PulseConfig } from './config/pulse.js';
 import { createPool } from './db/pool.js';
-import { ConsoleMailer } from './auth/mailer.js';
+import { ConsoleMailer, ResendMailer, type Mailer } from './auth/mailer.js';
 import { InMemorySessionStore, RedisSessionStore, type SessionStore } from './auth/sessionStore.js';
 import { MagicLinkAuthProvider } from './auth/magicLinkProvider.js';
 import { createApp } from './app.js';
 import { runScheduledFreezes } from './services/freeze.js';
 import type { Queryable } from './db/pool.js';
+
+function buildMailer(config: PulseConfig): Mailer {
+  if (config.mailProvider === 'resend') {
+    if (!config.resendApiKey) throw new Error('RESEND_API_KEY is required when mailProvider is resend');
+    return new ResendMailer({ apiKey: config.resendApiKey, from: config.mailFrom });
+  }
+  return new ConsoleMailer();
+}
 
 const FREEZE_CHECK_INTERVAL_MS = 60_000;
 
@@ -30,12 +38,12 @@ async function main(): Promise<void> {
   const sessionStore = await buildSessionStore(config.redisUrl);
   const authProvider = new MagicLinkAuthProvider({
     db,
-    mailer: new ConsoleMailer(),
+    mailer: buildMailer(config),
     sessionStore,
     config,
   });
 
-  const app = createApp({ authProvider, db, gamificationConfig: config.gamification });
+  const app = createApp({ authProvider, db, gamificationConfig: config.gamification, config });
   startFreezeScheduler(db);
   app.listen(config.port, () => {
     console.log(`Pulse listening on :${config.port}`);
