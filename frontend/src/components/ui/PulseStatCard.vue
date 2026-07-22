@@ -20,7 +20,7 @@ const TREND_SYMBOL: Record<'up' | 'down' | 'flat', string> = {
   <div class="pulse-stat-card">
     <span class="pulse-stat-card__label">{{ label }}</span>
     <div class="pulse-stat-card__row">
-      <span class="pulse-stat-card__value">{{ value }}</span>
+      <span class="pulse-stat-card__value tnp-display">{{ value }}</span>
       <span v-if="trend" class="pulse-stat-card__trend" :class="`pulse-stat-card__trend--${trend}`">
         {{ TREND_SYMBOL[trend] }} <span v-if="trendLabel">{{ trendLabel }}</span>
       </span>
@@ -40,7 +40,8 @@ const TREND_SYMBOL: Record<'up' | 'down' | 'flat', string> = {
   box-shadow: var(--shadow-sm);
   transition:
     border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
+    box-shadow var(--transition-fast),
+    background-color var(--transition-base);
 }
 
 .pulse-stat-card:hover {

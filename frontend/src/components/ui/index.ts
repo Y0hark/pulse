@@ -14,3 +14,4 @@ export { default as PulseEmptyState } from './PulseEmptyState.vue';
 export { default as PulseErrorState } from './PulseErrorState.vue';
 export { default as PulseSkeleton } from './PulseSkeleton.vue';
 export { default as PulseProgressRing } from './PulseProgressRing.vue';
+export { default as ThemeSwitcher } from './ThemeSwitcher.vue';

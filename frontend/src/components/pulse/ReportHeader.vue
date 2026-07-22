@@ -21,7 +21,7 @@ const generatedLabel = computed(() => {
   <header class="report-header">
     <div class="report-header__text">
       <span v-if="eyebrow" class="report-header__eyebrow">{{ eyebrow }}</span>
-      <h1 class="report-header__title">{{ title }}</h1>
+      <h1 class="report-header__title tnp-display">{{ title }}</h1>
       <p v-if="subtitle" class="report-header__subtitle">{{ subtitle }}</p>
       <p v-if="generatedLabel" class="report-header__freshness">Generated {{ generatedLabel }}</p>
     </div>
@@ -54,8 +54,8 @@ const generatedLabel = computed(() => {
 .report-header__title {
   margin: 0;
   font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.02em;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
 }
 .report-header__subtitle {
   margin: 0;

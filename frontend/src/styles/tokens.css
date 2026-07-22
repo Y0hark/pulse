@@ -2,46 +2,15 @@
  * Pulse design tokens — TNP-inspired.
  * Anthracite/dark corporate base, controlled green-cyan accent, sparing electric-indigo highlight.
  * Single source of truth for color, type, spacing, radius and shadow primitives.
+ *
+ * Themes are switched via [data-theme] on <html>: dimmed (default) · light · midnight · parchment.
+ * Non-color primitives (type, spacing, radius, motion) are theme-agnostic and defined once below.
  */
 :root {
-  /* Color — base surfaces (dark corporate) */
-  --color-bg: #12151b;
-  --color-bg-raised: #171b22;
-  --color-surface: #1b2028;
-  --color-surface-alt: #222834;
-  --color-surface-hover: #262d3a;
-  --color-border: #2b3240;
-  --color-border-strong: #3a4353;
-
-  /* Color — text */
-  --color-text-primary: #eef1f6;
-  --color-text-secondary: #a3adc2;
-  --color-text-muted: #6b7488;
-  --color-text-inverse: #0c0e12;
-
-  /* Color — accent (green-cyan / turquoise, the primary brand signal) */
-  --color-accent: #2dd4bf;
-  --color-accent-strong: #14b8a6;
-  --color-accent-soft: rgba(45, 212, 191, 0.14);
-  --color-accent-border: rgba(45, 212, 191, 0.35);
-
-  /* Color — electric accent, used sparingly for secondary emphasis only */
-  --color-electric: #6366f1;
-  --color-electric-soft: rgba(99, 102, 241, 0.14);
-
-  /* Color — semantic feedback */
-  --color-success: #22c55e;
-  --color-success-soft: rgba(34, 197, 94, 0.14);
-  --color-warning: #f59e0b;
-  --color-warning-soft: rgba(245, 158, 11, 0.14);
-  --color-danger: #f0554a;
-  --color-danger-soft: rgba(240, 85, 74, 0.14);
-  --color-info: var(--color-accent);
-  --color-info-soft: var(--color-accent-soft);
-
   /* Typography */
   --font-family-base:
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-family-display: 'Fraunces', 'Iowan Old Style', 'Georgia', serif;
   --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --font-size-xs: 0.75rem;
@@ -51,6 +20,7 @@
   --font-size-xl: 1.375rem;
   --font-size-2xl: 1.75rem;
   --font-size-3xl: 2.25rem;
+  --font-size-display: 3rem;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -79,12 +49,6 @@
   --radius-lg: 1rem;
   --radius-full: 999px;
 
-  /* Shadows — soft, low-opacity, tuned for dark surfaces */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.32);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
-  --shadow-accent-glow: 0 0 0 1px var(--color-accent-border), 0 4px 20px rgba(45, 212, 191, 0.18);
-
   /* Motion — durations, easings and shared transition shorthands.
      Keep this the single vocabulary: components should compose these
      tokens rather than hand-rolling their own durations/curves. */
@@ -108,22 +72,165 @@
   --layout-gutter: var(--space-6);
 }
 
-/* Light surface variant — used for controlled light sections (e.g. printable reports), not a full theme swap. */
-:root[data-theme='light'] {
-  --color-bg: #f4f6f9;
+/* ---------------------------------------------------------------------- */
+/* Dimmed — the default working theme. Anthracite surfaces, teal signal.  */
+/* ---------------------------------------------------------------------- */
+:root,
+[data-theme='dimmed'] {
+  --color-bg: #12151b;
+  --color-bg-raised: #171b22;
+  --color-surface: #1b2028;
+  --color-surface-alt: #222834;
+  --color-surface-hover: #262d3a;
+  --color-border: #2b3240;
+  --color-border-strong: #3a4353;
+
+  --color-text-primary: #eef1f6;
+  --color-text-secondary: #a3adc2;
+  --color-text-muted: #6b7488;
+  --color-text-inverse: #0c0e12;
+
+  --color-accent: #2dd4bf;
+  --color-accent-strong: #14b8a6;
+  --color-accent-soft: rgba(45, 212, 191, 0.14);
+  --color-accent-border: rgba(45, 212, 191, 0.35);
+
+  --color-electric: #6366f1;
+  --color-electric-soft: rgba(99, 102, 241, 0.14);
+
+  --color-success: #22c55e;
+  --color-success-soft: rgba(34, 197, 94, 0.14);
+  --color-warning: #f59e0b;
+  --color-warning-soft: rgba(245, 158, 11, 0.14);
+  --color-danger: #f0554a;
+  --color-danger-soft: rgba(240, 85, 74, 0.14);
+  --color-info: var(--color-accent);
+  --color-info-soft: var(--color-accent-soft);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --shadow-accent-glow: 0 0 0 1px var(--color-accent-border), 0 4px 20px rgba(45, 212, 191, 0.18);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Light — clean neutral daylight surface for bright rooms & projectors. */
+/* ---------------------------------------------------------------------- */
+[data-theme='light'] {
+  --color-bg: #f5f6f8;
   --color-bg-raised: #ffffff;
   --color-surface: #ffffff;
   --color-surface-alt: #eef1f6;
   --color-surface-hover: #e5e9f0;
-  --color-border: #dbe0e8;
-  --color-border-strong: #c3cad6;
+  --color-border: #dde2ea;
+  --color-border-strong: #c5ccd8;
 
   --color-text-primary: #171b22;
   --color-text-secondary: #4b5567;
   --color-text-muted: #8892a3;
-  --color-text-inverse: #eef1f6;
+  --color-text-inverse: #f5f7fa;
+
+  --color-accent: #0f9c8d;
+  --color-accent-strong: #0c7d71;
+  --color-accent-soft: rgba(15, 156, 141, 0.1);
+  --color-accent-border: rgba(15, 156, 141, 0.35);
+
+  --color-electric: #5457e0;
+  --color-electric-soft: rgba(84, 87, 224, 0.1);
+
+  --color-success: #17a34a;
+  --color-success-soft: rgba(23, 163, 74, 0.1);
+  --color-warning: #c2760a;
+  --color-warning-soft: rgba(194, 118, 10, 0.1);
+  --color-danger: #d8433a;
+  --color-danger-soft: rgba(216, 67, 58, 0.1);
+  --color-info: var(--color-accent);
+  --color-info-soft: var(--color-accent-soft);
 
   --shadow-sm: 0 1px 2px rgba(20, 24, 33, 0.06);
   --shadow-md: 0 4px 16px rgba(20, 24, 33, 0.08);
   --shadow-lg: 0 12px 32px rgba(20, 24, 33, 0.12);
+  --shadow-accent-glow: 0 0 0 1px var(--color-accent-border), 0 4px 20px rgba(15, 156, 141, 0.12);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Midnight — near-black OLED variant, sharper contrast, punchier glow.  */
+/* ---------------------------------------------------------------------- */
+[data-theme='midnight'] {
+  --color-bg: #06070a;
+  --color-bg-raised: #0b0d11;
+  --color-surface: #0f1216;
+  --color-surface-alt: #14181e;
+  --color-surface-hover: #1a1f27;
+  --color-border: #212630;
+  --color-border-strong: #2e3540;
+
+  --color-text-primary: #f3f5f9;
+  --color-text-secondary: #99a3b8;
+  --color-text-muted: #5b6478;
+  --color-text-inverse: #06070a;
+
+  --color-accent: #35e6cd;
+  --color-accent-strong: #1fcdb4;
+  --color-accent-soft: rgba(53, 230, 205, 0.16);
+  --color-accent-border: rgba(53, 230, 205, 0.4);
+
+  --color-electric: #8184ff;
+  --color-electric-soft: rgba(129, 132, 255, 0.16);
+
+  --color-success: #2fd66b;
+  --color-success-soft: rgba(47, 214, 107, 0.16);
+  --color-warning: #ffb224;
+  --color-warning-soft: rgba(255, 178, 36, 0.16);
+  --color-danger: #ff6459;
+  --color-danger-soft: rgba(255, 100, 89, 0.16);
+  --color-info: var(--color-accent);
+  --color-info-soft: var(--color-accent-soft);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.7);
+  --shadow-accent-glow: 0 0 0 1px var(--color-accent-border), 0 4px 24px rgba(53, 230, 205, 0.28);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Parchment — warm editorial cream & ink, restrained teal. For long,     */
+/* report-style reading sessions; the serif display face earns its keep  */
+/* here.                                                                  */
+/* ---------------------------------------------------------------------- */
+[data-theme='parchment'] {
+  --color-bg: #ece6d8;
+  --color-bg-raised: #f6f2e8;
+  --color-surface: #f6f2e8;
+  --color-surface-alt: #efe9db;
+  --color-surface-hover: #e6ddc9;
+  --color-border: #d9d0ba;
+  --color-border-strong: #c2b79c;
+
+  --color-text-primary: #26221b;
+  --color-text-secondary: #5b5647;
+  --color-text-muted: #8c8570;
+  --color-text-inverse: #f6f2e8;
+
+  --color-accent: #0e7d70;
+  --color-accent-strong: #0a645a;
+  --color-accent-soft: rgba(14, 125, 112, 0.12);
+  --color-accent-border: rgba(14, 125, 112, 0.32);
+
+  --color-electric: #4f46c9;
+  --color-electric-soft: rgba(79, 70, 201, 0.12);
+
+  --color-success: #397a34;
+  --color-success-soft: rgba(57, 122, 52, 0.12);
+  --color-warning: #a3660f;
+  --color-warning-soft: rgba(163, 102, 15, 0.12);
+  --color-danger: #b8493c;
+  --color-danger-soft: rgba(184, 73, 60, 0.12);
+  --color-info: var(--color-accent);
+  --color-info-soft: var(--color-accent-soft);
+
+  --shadow-sm: 0 1px 2px rgba(38, 34, 27, 0.08);
+  --shadow-md: 0 4px 16px rgba(38, 34, 27, 0.1);
+  --shadow-lg: 0 12px 32px rgba(38, 34, 27, 0.14);
+  --shadow-accent-glow: 0 0 0 1px var(--color-accent-border), 0 4px 20px rgba(14, 125, 112, 0.16);
 }

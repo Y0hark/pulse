@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSessionStore } from '../stores/session';
 import { useToast } from '../composables/useToast';
-import { PulseBadge, PulseButton, PulseInput, PulseModal, PulseSelect } from '../components/ui';
+import { PulseBadge, PulseButton, PulseInput, PulseModal, PulseSelect, ThemeSwitcher } from '../components/ui';
 
 const route = useRoute();
 const router = useRouter();
@@ -104,6 +104,8 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside));
       <router-link :to="{ name: 'weekly-pulse' }">
         <PulseButton size="sm">New submission</PulseButton>
       </router-link>
+
+      <ThemeSwitcher />
 
       <div v-if="session.user" ref="menuRoot" class="app-header__user-menu">
         <button

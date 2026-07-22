@@ -75,7 +75,7 @@ export class MagicLinkAuthProvider implements AuthProvider {
     );
     if (claim.rows.length === 0) return { ok: false, reason: 'already_used' };
 
-    const user = await upsertUserByEmail(this.deps.db, row.email);
+    const user = await upsertUserByEmail(this.deps.db, row.email, this.deps.config.bootstrapAdminEmail);
     return { ok: true, userId: user.id };
   }
 

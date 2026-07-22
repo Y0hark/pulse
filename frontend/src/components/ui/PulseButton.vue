@@ -36,7 +36,7 @@ withDefaults(
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   border: 1px solid transparent;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
@@ -64,15 +64,15 @@ withDefaults(
 
 /* Sizes */
 .pulse-button--sm {
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-4);
   font-size: var(--font-size-sm);
 }
 .pulse-button--md {
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-5);
   font-size: var(--font-size-md);
 }
 .pulse-button--lg {
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-3) var(--space-8);
   font-size: var(--font-size-lg);
 }
 
@@ -87,13 +87,13 @@ withDefaults(
 }
 
 .pulse-button--secondary {
-  background: var(--color-surface-alt);
+  background: transparent;
   border-color: var(--color-border-strong);
   color: var(--color-text-primary);
 }
 .pulse-button--secondary:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  border-color: var(--color-text-muted);
+  background: var(--color-surface-alt);
+  border-color: var(--color-text-primary);
 }
 
 .pulse-button--ghost {

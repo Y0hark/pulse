@@ -24,6 +24,8 @@ export interface PulseConfig {
   mailFrom: string;
   /** Shared secret cron-job.org sends to authorize hitting /internal/tasks/freeze. */
   internalTaskSecret?: string;
+  /** Email auto-promoted to global admin on first login, so a fresh deploy always has one. */
+  bootstrapAdminEmail?: string;
 }
 
 function parseIntList(raw: string | undefined, fallback: number[]): number[] {
@@ -59,6 +61,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PulseConfig {
     resendApiKey: env.RESEND_API_KEY,
     mailFrom: env.MAIL_FROM ?? 'Pulse <pulse@tnpconsultants.com>',
     internalTaskSecret: env.INTERNAL_TASK_SECRET,
+    bootstrapAdminEmail: env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase() || undefined,
     gamification: {
       onTimeXp: Number(env.GAMIFICATION_ON_TIME_XP ?? 10),
       lateXpDecayPerHour: Number(env.GAMIFICATION_LATE_XP_DECAY_PER_HOUR ?? 1),

@@ -34,7 +34,8 @@ withDefaults(
   transition:
     transform var(--transition-fast),
     border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
+    box-shadow var(--transition-fast),
+    background-color var(--transition-base);
 }
 
 .pulse-card--interactive {

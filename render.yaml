@@ -24,3 +24,5 @@ services:
         sync: false # random string, also configured in cron-job.org's request header
       - key: ALLOWED_DOMAINS
         sync: false # optional: comma-separated list of email domains allowed to sign in
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false # this email is auto-promoted to global admin on its first login

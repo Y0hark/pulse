@@ -15,9 +15,12 @@ import PulseEmptyState from '../components/ui/PulseEmptyState.vue';
 import PulseErrorState from '../components/ui/PulseErrorState.vue';
 import PulseSkeleton from '../components/ui/PulseSkeleton.vue';
 import PulseProgressRing from '../components/ui/PulseProgressRing.vue';
+import ThemeSwitcher from '../components/ui/ThemeSwitcher.vue';
+import { THEME_OPTIONS, useTheme } from '../composables/useTheme';
 import { useToast } from '../composables/useToast';
 
 const toast = useToast();
+const { theme, setTheme } = useTheme();
 
 const textValue = ref('');
 const textareaValue = ref('');
@@ -43,11 +46,42 @@ const tableRows = [
     <section class="tnp-section">
       <div class="tnp-section__header">
         <div>
-          <h1>Pulse Design System</h1>
+          <h1 class="tnp-display">Pulse Design System</h1>
           <p class="tnp-section__subtitle">TNP-inspired tokens and components — reference &amp; QA surface.</p>
         </div>
+        <ThemeSwitcher />
       </div>
     </section>
+
+    <hr class="tnp-hairline" />
+
+    <section class="tnp-section">
+      <h2 class="tnp-section__title">Themes</h2>
+      <p class="tnp-section__subtitle">Four surfaces, one identity. Pick a working mode.</p>
+      <div class="ds-themes">
+        <button
+          v-for="opt in THEME_OPTIONS"
+          :key="opt.value"
+          type="button"
+          class="ds-theme-card"
+          :class="{ 'ds-theme-card--active': opt.value === theme }"
+          :data-theme="opt.value"
+          @click="setTheme(opt.value)"
+        >
+          <span class="ds-theme-card__swatches">
+            <span class="ds-theme-card__swatch" style="background: var(--color-bg)" />
+            <span class="ds-theme-card__swatch" style="background: var(--color-surface)" />
+            <span class="ds-theme-card__swatch" style="background: var(--color-accent)" />
+            <span class="ds-theme-card__swatch" style="background: var(--color-electric)" />
+          </span>
+          <span class="ds-theme-card__label tnp-display">Aa</span>
+          <span class="ds-theme-card__name">{{ opt.label }}</span>
+          <span class="ds-theme-card__desc">{{ opt.description }}</span>
+        </button>
+      </div>
+    </section>
+
+    <hr class="tnp-hairline" />
 
     <section class="tnp-section">
       <h2 class="tnp-section__title">Colors</h2>
@@ -220,6 +254,66 @@ const tableRows = [
 </template>
 
 <style scoped>
+.ds-themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.ds-theme-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.ds-theme-card:hover {
+  border-color: var(--color-accent-border);
+}
+
+.ds-theme-card--active {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-accent-glow);
+}
+
+.ds-theme-card__swatches {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.ds-theme-card__swatch {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.ds-theme-card__label {
+  font-size: var(--font-size-xl);
+}
+
+.ds-theme-card__name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.ds-theme-card__desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: -0.35rem;
+}
+
 .ds-row {
   display: flex;
   flex-wrap: wrap;

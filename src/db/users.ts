@@ -38,14 +38,23 @@ export interface UserUpdateInput {
   profileId?: number | null;
 }
 
-/** First successful login upserts the users row (auto-provisioning). */
-export async function upsertUserByEmail(db: Queryable, email: string): Promise<UserRecord> {
+/** First successful login upserts the users row (auto-provisioning). `bootstrapAdminEmail`
+ * (BOOTSTRAP_ADMIN_EMAIL) is granted global admin the first time it logs in, so a fresh
+ * deploy always has one usable admin account without a manual DB edit. */
+export async function upsertUserByEmail(
+  db: Queryable,
+  email: string,
+  bootstrapAdminEmail?: string,
+): Promise<UserRecord> {
+  const isBootstrapAdmin = !!bootstrapAdminEmail && email.toLowerCase() === bootstrapAdminEmail.toLowerCase();
   const result = await db.query(
-    `INSERT INTO users (email)
-     VALUES ($1)
-     ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+    `INSERT INTO users (email, is_global_admin)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE
+       SET email = EXCLUDED.email,
+           is_global_admin = CASE WHEN $2 THEN true ELSE users.is_global_admin END
      RETURNING id, email, display_name, profile_id, is_global_admin`,
-    [email],
+    [email, isBootstrapAdmin],
   );
   const row = result.rows[0];
   return {

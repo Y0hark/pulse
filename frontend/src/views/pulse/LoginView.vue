@@ -38,7 +38,7 @@ async function onSubmit(): Promise<void> {
     <section class="auth-page__brand">
       <div class="auth-page__brand-inner">
         <span class="auth-page__wordmark">Pulse</span>
-        <p class="auth-page__tagline">The weekly signal for how your team is really doing.</p>
+        <p class="auth-page__tagline tnp-display">The weekly signal for how your team is really doing.</p>
         <p class="auth-page__context">
           Workload, deliveries and blockers, rolled up per team, per week &mdash; so managers spend
           less time chasing status and more time acting on it.
@@ -136,10 +136,10 @@ async function onSubmit(): Promise<void> {
 }
 
 .auth-page__tagline {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
   color: var(--color-text-primary);
-  font-weight: var(--font-weight-medium);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .auth-page__context {

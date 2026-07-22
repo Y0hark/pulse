@@ -17,6 +17,11 @@ body,
   height: 100%;
 }
 
+html {
+  background: var(--color-bg);
+  transition: background-color var(--transition-base);
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
@@ -25,6 +30,9 @@ body {
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
   -webkit-font-smoothing: antialiased;
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base);
 }
 
 h1,
@@ -81,7 +89,25 @@ textarea {
   outline-offset: 2px;
 }
 
+/* Display type ---------------------------------------------------------
+   Opt-in serif treatment for hero-weight moments: page titles, report
+   headers, and headline stat values. Used with restraint — everything
+   else (UI chrome, tables, buttons) stays on the sans-serif work face. */
+.tnp-display {
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.01em;
+}
+
 /* Layout conventions ------------------------------------------------- */
+
+/* Hairline: a single 1px rule used to organize content into editorial
+   sections/columns instead of boxy shadowed containers. */
+.tnp-hairline {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-6) 0;
+}
 
 /* Page-level container: centers content, desktop-first gutter. */
 .tnp-page {
