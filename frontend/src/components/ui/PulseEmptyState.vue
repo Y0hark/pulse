@@ -12,8 +12,8 @@ withDefaults(
 </script>
 
 <template>
-  <div class="pulse-empty-state">
-    <span class="pulse-empty-state__icon" aria-hidden="true">{{ icon }}</span>
+  <div class="pulse-empty-state motion-fade-in-up">
+    <span class="pulse-empty-state__icon motion-pop-in" aria-hidden="true">{{ icon }}</span>
     <h4 class="pulse-empty-state__title">{{ title }}</h4>
     <p v-if="description" class="pulse-empty-state__description">{{ description }}</p>
     <div v-if="$slots.default" class="pulse-empty-state__action">

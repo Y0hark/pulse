@@ -104,6 +104,7 @@ onMounted(() => {
         v-for="mission in filteredMissions"
         :key="mission.id"
         class="missions__card"
+        interactive
         role="button"
         tabindex="0"
         @click="openMission(mission.slug)"

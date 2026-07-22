@@ -3,6 +3,7 @@
  * Component-level styles live with their components in src/components/ui/*.
  */
 @import './tokens.css';
+@import './motion.css';
 
 *,
 *::before,
@@ -182,6 +183,7 @@ textarea {
 
 .pulse-field--invalid .pulse-field__control {
   border-color: var(--color-danger);
+  animation: motion-shake var(--duration-slow) var(--ease-out);
 }
 .pulse-field--invalid .pulse-field__control:focus-visible {
   box-shadow: 0 0 0 3px var(--color-danger-soft);

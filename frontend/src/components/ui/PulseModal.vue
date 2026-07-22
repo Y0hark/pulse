@@ -117,12 +117,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown));
   gap: var(--space-3);
 }
 
-.pulse-modal-fade-enter-active,
-.pulse-modal-fade-leave-active {
+.pulse-modal-fade-enter-active {
   transition: opacity var(--transition-base);
+}
+.pulse-modal-fade-leave-active {
+  transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 .pulse-modal-fade-enter-from,
 .pulse-modal-fade-leave-to {
   opacity: 0;
+}
+
+.pulse-modal-fade-enter-active .pulse-modal {
+  transition: transform var(--transition-base);
+}
+.pulse-modal-fade-leave-active .pulse-modal {
+  transition: transform var(--duration-fast) var(--ease-in-out);
+}
+.pulse-modal-fade-enter-from .pulse-modal,
+.pulse-modal-fade-leave-to .pulse-modal {
+  transform: scale(0.96) translateY(4px);
 }
 </style>

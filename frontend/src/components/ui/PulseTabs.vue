@@ -1,5 +1,7 @@
 <script setup lang="ts">
-withDefaults(
+import { nextTick, onMounted, ref, watch } from 'vue';
+
+const props = withDefaults(
   defineProps<{
     modelValue: string;
     tabs: Array<{ value: string; label: string }>;
@@ -10,6 +12,27 @@ withDefaults(
 defineEmits<{
   'update:modelValue': [value: string];
 }>();
+
+const tabRefs = ref<Record<string, HTMLButtonElement | undefined>>({});
+const indicatorStyle = ref({ transform: 'translateX(0px)', width: '0px' });
+
+function setTabRef(value: string, el: Element | null): void {
+  tabRefs.value[value] = (el as HTMLButtonElement) ?? undefined;
+}
+
+function updateIndicator(): void {
+  const el = tabRefs.value[props.modelValue];
+  if (!el) return;
+  indicatorStyle.value = { transform: `translateX(${el.offsetLeft}px)`, width: `${el.offsetWidth}px` };
+}
+
+watch(() => props.modelValue, () => void nextTick(updateIndicator));
+watch(
+  () => props.tabs,
+  () => void nextTick(updateIndicator),
+  { deep: true },
+);
+onMounted(() => void nextTick(updateIndicator));
 </script>
 
 <template>
@@ -18,6 +41,7 @@ defineEmits<{
       <button
         v-for="tab in tabs"
         :key="tab.value"
+        :ref="(el) => setTabRef(tab.value, el as Element | null)"
         type="button"
         role="tab"
         class="pulse-tabs__tab"
@@ -27,6 +51,7 @@ defineEmits<{
       >
         {{ tab.label }}
       </button>
+      <span class="pulse-tabs__indicator" :style="indicatorStyle" aria-hidden="true" />
     </div>
     <div class="pulse-tabs__panel">
       <slot :active="modelValue" />
@@ -36,6 +61,7 @@ defineEmits<{
 
 <style scoped>
 .pulse-tabs__list {
+  position: relative;
   display: flex;
   gap: var(--space-1);
   border-bottom: 1px solid var(--color-border);
@@ -51,9 +77,7 @@ defineEmits<{
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast);
+  transition: color var(--transition-fast);
   transform: translateY(1px);
 }
 
@@ -63,6 +87,17 @@ defineEmits<{
 
 .pulse-tabs__tab--active {
   color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
+}
+
+.pulse-tabs__indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  transition:
+    transform var(--transition-base),
+    width var(--transition-base);
 }
 </style>

@@ -24,13 +24,14 @@ withDefaults(
     :type="type"
     :disabled="disabled || loading"
   >
-    <span v-if="loading" class="pulse-button__spinner" aria-hidden="true" />
+    <span v-if="loading" class="pulse-button__spinner motion-pop-in" aria-hidden="true" />
     <span class="pulse-button__label"><slot /></span>
   </button>
 </template>
 
 <style scoped>
 .pulse-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -43,17 +44,22 @@ withDefaults(
     background var(--transition-fast),
     border-color var(--transition-fast),
     color var(--transition-fast),
-    transform var(--transition-fast);
+    box-shadow var(--transition-fast),
+    transform var(--duration-instant) var(--ease-out);
   white-space: nowrap;
 }
 
 .pulse-button:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 
 .pulse-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.pulse-button--loading {
+  cursor: progress;
 }
 
 /* Sizes */
@@ -77,6 +83,7 @@ withDefaults(
 }
 .pulse-button--primary:hover:not(:disabled) {
   background: var(--color-accent-strong);
+  box-shadow: var(--shadow-accent-glow);
 }
 
 .pulse-button--secondary {
@@ -86,6 +93,7 @@ withDefaults(
 }
 .pulse-button--secondary:hover:not(:disabled) {
   background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
 }
 
 .pulse-button--ghost {
@@ -103,6 +111,7 @@ withDefaults(
 }
 .pulse-button--danger:hover:not(:disabled) {
   filter: brightness(1.08);
+  box-shadow: 0 4px 16px rgba(240, 85, 74, 0.25);
 }
 
 .pulse-button__spinner {
@@ -111,12 +120,6 @@ withDefaults(
   border-radius: 50%;
   border: 2px solid currentColor;
   border-top-color: transparent;
-  animation: pulse-button-spin 0.6s linear infinite;
-}
-
-@keyframes pulse-button-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  animation: motion-spin 0.6s linear infinite;
 }
 </style>

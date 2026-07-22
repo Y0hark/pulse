@@ -47,7 +47,7 @@ const REPORT_LINKS: ReportLink[] = [
 
     <div class="reports-home__grid">
       <router-link v-for="link in REPORT_LINKS" :key="link.to" :to="link.to" class="reports-home__link">
-        <PulseCard class="reports-home__card">
+        <PulseCard class="reports-home__card" interactive>
           <span class="reports-home__icon" aria-hidden="true">{{ link.icon }}</span>
           <h2 class="reports-home__title">{{ link.title }}</h2>
           <p class="reports-home__description">{{ link.description }}</p>

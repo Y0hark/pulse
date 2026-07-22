@@ -2,15 +2,17 @@
 withDefaults(
   defineProps<{
     padded?: boolean;
+    interactive?: boolean;
   }>(),
   {
     padded: true,
+    interactive: false,
   },
 );
 </script>
 
 <template>
-  <div class="pulse-card" :class="{ 'pulse-card--padded': padded }">
+  <div class="pulse-card" :class="{ 'pulse-card--padded': padded, 'pulse-card--interactive': interactive }">
     <header v-if="$slots.header" class="pulse-card__header">
       <slot name="header" />
     </header>
@@ -29,6 +31,24 @@ withDefaults(
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.pulse-card--interactive {
+  cursor: pointer;
+}
+
+.pulse-card--interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.pulse-card--interactive:active {
+  transform: translateY(-1px);
 }
 
 .pulse-card--padded .pulse-card__body {

@@ -70,6 +70,7 @@ import { navItems } from './navItems';
 }
 
 .sidebar__link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -79,7 +80,9 @@ import { navItems } from './navItems';
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .sidebar__link:hover {
@@ -87,14 +90,30 @@ import { navItems } from './navItems';
   color: var(--color-text-primary);
 }
 
+.sidebar__link:hover .sidebar__link-icon {
+  transform: translateX(1px);
+}
+
 .sidebar__link--active {
   background: var(--color-accent-soft);
   color: var(--color-accent);
 }
 
+.sidebar__link--active::before {
+  content: '';
+  position: absolute;
+  left: -0.5rem;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+
 .sidebar__link-icon {
   font-size: var(--font-size-md);
   line-height: 1;
+  transition: transform var(--transition-fast);
 }
 
 @media (max-width: 1024px) {

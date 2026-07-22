@@ -30,7 +30,7 @@ withDefaults(
     var(--color-surface-alt) 70%
   );
   background-size: 200% 100%;
-  animation: pulse-skeleton-shimmer 1.4s ease-in-out infinite;
+  animation: motion-shimmer 1.4s ease-in-out infinite;
   border-radius: var(--radius-sm);
 }
 
@@ -49,14 +49,5 @@ withDefaults(
   width: 2.5rem;
   height: 2.5rem;
   border-radius: var(--radius-full);
-}
-
-@keyframes pulse-skeleton-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
 }
 </style>

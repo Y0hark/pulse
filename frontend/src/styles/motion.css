@@ -1,0 +1,176 @@
+/**
+ * Pulse motion system — shared keyframes, entrance utilities and page
+ * transitions. Components should reuse these rather than defining their
+ * own one-off animations, so the app reads as one coherent motion
+ * language instead of disparate effects.
+ *
+ * Respects prefers-reduced-motion globally: the kill switch below
+ * collapses every animation/transition to effectively instant, so
+ * individual components don't need their own reduced-motion branches.
+ */
+
+@keyframes motion-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes motion-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes motion-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes motion-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes motion-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes motion-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+.motion-fade-in {
+  animation: motion-fade-in var(--duration-base) var(--ease-out) both;
+}
+
+.motion-fade-in-up {
+  animation: motion-fade-in-up var(--duration-base) var(--ease-out) both;
+}
+
+.motion-pop-in {
+  animation: motion-pop-in var(--duration-base) var(--ease-spring) both;
+}
+
+/* Stagger: apply to a grid/list container so its direct children cascade
+   in rather than popping simultaneously. Falls back to a flat delay past
+   the 12th child so long lists don't produce an absurd total delay.
+   `.tnp-grid` (the shared card/metric grid layout) gets this by default
+   so views cascade in without opting in individually. */
+.motion-stagger > *,
+.tnp-grid > * {
+  animation: motion-fade-in-up var(--duration-base) var(--ease-out) both;
+}
+.motion-stagger > *:nth-child(n + 13),
+.tnp-grid > *:nth-child(n + 13) {
+  animation-delay: calc(var(--stagger-step) * 12);
+}
+.motion-stagger > *:nth-child(1),
+.tnp-grid > *:nth-child(1) {
+  animation-delay: calc(var(--stagger-step) * 0);
+}
+.motion-stagger > *:nth-child(2),
+.tnp-grid > *:nth-child(2) {
+  animation-delay: calc(var(--stagger-step) * 1);
+}
+.motion-stagger > *:nth-child(3),
+.tnp-grid > *:nth-child(3) {
+  animation-delay: calc(var(--stagger-step) * 2);
+}
+.motion-stagger > *:nth-child(4),
+.tnp-grid > *:nth-child(4) {
+  animation-delay: calc(var(--stagger-step) * 3);
+}
+.motion-stagger > *:nth-child(5),
+.tnp-grid > *:nth-child(5) {
+  animation-delay: calc(var(--stagger-step) * 4);
+}
+.motion-stagger > *:nth-child(6),
+.tnp-grid > *:nth-child(6) {
+  animation-delay: calc(var(--stagger-step) * 5);
+}
+.motion-stagger > *:nth-child(7),
+.tnp-grid > *:nth-child(7) {
+  animation-delay: calc(var(--stagger-step) * 6);
+}
+.motion-stagger > *:nth-child(8),
+.tnp-grid > *:nth-child(8) {
+  animation-delay: calc(var(--stagger-step) * 7);
+}
+.motion-stagger > *:nth-child(9),
+.tnp-grid > *:nth-child(9) {
+  animation-delay: calc(var(--stagger-step) * 8);
+}
+.motion-stagger > *:nth-child(10),
+.tnp-grid > *:nth-child(10) {
+  animation-delay: calc(var(--stagger-step) * 9);
+}
+.motion-stagger > *:nth-child(11),
+.tnp-grid > *:nth-child(11) {
+  animation-delay: calc(var(--stagger-step) * 10);
+}
+.motion-stagger > *:nth-child(12),
+.tnp-grid > *:nth-child(12) {
+  animation-delay: calc(var(--stagger-step) * 11);
+}
+
+/* Page-level transition, driven by <Transition name="page"> around
+   <router-view> in AppShell. Short and directional but subtle — a section
+   change, not a slide show. */
+.page-enter-active {
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base);
+}
+.page-leave-active {
+  transition: opacity var(--duration-fast) var(--ease-in-out);
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.page-leave-to {
+  opacity: 0;
+}
+
+/* Reduced motion: collapse everything to effectively instant rather than
+   disabling animations outright, so state-driven animations (e.g. a
+   skeleton swapping to content) still resolve correctly. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

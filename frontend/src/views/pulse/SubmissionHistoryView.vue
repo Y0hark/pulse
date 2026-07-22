@@ -105,6 +105,7 @@ const hasPeriods = computed(() => (periods.value?.length ?? 0) > 0);
         v-for="entry in periods"
         :key="entry.periodId"
         class="submission-history__row"
+        interactive
         role="button"
         tabindex="0"
         :aria-expanded="expandedIsoWeek === entry.isoWeek"

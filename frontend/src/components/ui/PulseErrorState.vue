@@ -17,8 +17,8 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="pulse-error-state">
-    <span class="pulse-error-state__icon" aria-hidden="true">⚠️</span>
+  <div class="pulse-error-state motion-fade-in-up">
+    <span class="pulse-error-state__icon motion-pop-in" aria-hidden="true">⚠️</span>
     <h4 class="pulse-error-state__title">{{ title }}</h4>
     <p v-if="description" class="pulse-error-state__description">{{ description }}</p>
     <button v-if="retryable" class="pulse-error-state__retry" type="button" @click="$emit('retry')">
@@ -61,8 +61,14 @@ defineEmits<{
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-4);
   cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    transform var(--duration-instant) var(--ease-out);
 }
 .pulse-error-state__retry:hover {
   background: var(--color-surface-hover);
+}
+.pulse-error-state__retry:active {
+  transform: scale(0.97);
 }
 </style>

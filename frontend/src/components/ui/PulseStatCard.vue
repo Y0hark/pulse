@@ -38,6 +38,14 @@ const TREND_SYMBOL: Record<'up' | 'down' | 'flat', string> = {
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.pulse-stat-card:hover {
+  border-color: var(--color-accent-border);
+  box-shadow: var(--shadow-md);
 }
 
 .pulse-stat-card__label {

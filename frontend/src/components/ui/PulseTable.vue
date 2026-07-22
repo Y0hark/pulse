@@ -70,6 +70,7 @@ withDefaults(
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
+  transition: background var(--transition-fast);
 }
 
 .pulse-table tbody tr:last-child td {
