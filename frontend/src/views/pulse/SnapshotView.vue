@@ -20,7 +20,7 @@ const HEALTH_LABEL: Record<string, string> = { good: '🟢 Good', at_risk: '🟠
 
 const route = useRoute();
 const periodId = computed(() => Number(route.params.periodId));
-const { exportPdf, copyLink } = useReportActions();
+const { exportPdf, exportingPdf, copyLink } = useReportActions();
 
 const period = ref<ReportPeriod | null>(null);
 const aggregate = ref<DashboardAggregate | null>(null);
@@ -116,7 +116,13 @@ onMounted(() => {
         >
           <template #actions>
             <PulseButton variant="secondary" size="sm" @click="copyLink">Copy link</PulseButton>
-            <PulseButton variant="secondary" size="sm" @click="exportPdf">Export PDF</PulseButton>
+            <PulseButton
+              variant="secondary"
+              size="sm"
+              :loading="exportingPdf"
+              @click="exportPdf(`/teams/${TEAM}/periods/${periodId}/snapshot/export.pdf`)"
+              >Export PDF</PulseButton
+            >
             <PulseButton variant="secondary" size="sm" :loading="exportingPng" @click="exportPng">Export PNG</PulseButton>
           </template>
         </ReportHeader>
@@ -239,16 +245,5 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--space-3);
   align-items: flex-start;
-}
-
-@media print {
-  .snapshot {
-    max-width: none;
-    padding: 0;
-  }
-  section,
-  .pulse-card {
-    break-inside: avoid;
-  }
 }
 </style>

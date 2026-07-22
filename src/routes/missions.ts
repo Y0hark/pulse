@@ -19,6 +19,8 @@ import {
 } from '../db/missions.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireGlobalAdmin } from '../middleware/requireGlobalAdmin.js';
+import { renderPdf } from '../services/pdfExport.js';
+import { renderConsolidatedPdf } from '../pdf/templates/consolidated.js';
 
 const REPORTING_FREQUENCIES: ReportingFrequency[] = ['weekly', 'biweekly', 'monthly'];
 const FREEZE_MODES: FreezeMode[] = ['auto', 'manual', 'both'];
@@ -96,6 +98,26 @@ export function createMissionsRouter(authProvider: AuthProvider, db: Queryable):
 
     const report = await getConsolidatedReport(db, period.id);
     res.status(200).json({ period, report });
+  });
+
+  // Registered before '/missions/:slug' for the same reason as '/missions/consolidated-report'.
+  router.get('/missions/consolidated-report/export.pdf', auth, async (req, res) => {
+    const isoWeek = req.query.period;
+    const period =
+      typeof isoWeek === 'string' && isoWeek.trim() !== '' ? await getPeriodByIsoWeek(db, isoWeek) : await getCurrentPeriod(db);
+    if (!period) {
+      res.status(404).json({ error: 'period_not_found' });
+      return;
+    }
+
+    const report = await getConsolidatedReport(db, period.id);
+    const html = renderConsolidatedPdf(period, report, { generatedAt: new Date().toISOString() });
+    const pdf = await renderPdf(html);
+
+    res.status(200);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="pulse-consolidated-${period.isoWeek}.pdf"`);
+    res.send(pdf);
   });
 
   router.get('/missions/:slug', auth, async (req, res) => {

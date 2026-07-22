@@ -67,6 +67,7 @@ async function loadCurrentReport(): Promise<void> {
 function openPresenter(index: number): void {
   currentIndex.value = index;
   presenting.value = true;
+  void loadCurrentReport();
 }
 
 function closePresenter(): void {

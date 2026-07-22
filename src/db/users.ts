@@ -36,6 +36,10 @@ export async function upsertUserByEmail(db: Queryable, email: string): Promise<U
   };
 }
 
+export async function updateDisplayName(db: Queryable, userId: string, displayName: string): Promise<void> {
+  await db.query(`UPDATE users SET display_name = $1 WHERE id = $2`, [displayName, userId]);
+}
+
 export async function getUserById(
   db: Queryable,
   userId: string,

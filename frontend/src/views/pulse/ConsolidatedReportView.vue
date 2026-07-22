@@ -11,7 +11,7 @@ import { summarizeConsolidated } from '../../utils/reportSummary';
 const SEVERITY_LABEL: Record<AlertSeverity, string> = { critical: '🔴 Critical', warn: '🟠 Warning', info: 'ℹ️ Info' };
 const SEVERITY_VARIANT: Record<AlertSeverity, 'danger' | 'warning' | 'accent'> = { critical: 'danger', warn: 'warning', info: 'accent' };
 
-const { exportPdf, copyLink } = useReportActions();
+const { exportPdf, exportingPdf, copyLink } = useReportActions();
 
 const period = ref<ReportPeriod | null>(null);
 const report = ref<ConsolidatedReport | null>(null);
@@ -81,7 +81,13 @@ onMounted(load);
       >
         <template #actions>
           <PulseButton variant="secondary" size="sm" @click="copyLink">Copy link</PulseButton>
-          <PulseButton variant="secondary" size="sm" @click="exportPdf">Export PDF</PulseButton>
+          <PulseButton
+            variant="secondary"
+            size="sm"
+            :loading="exportingPdf"
+            @click="exportPdf(`/missions/consolidated-report/export.pdf?period=${period.isoWeek}`)"
+            >Export PDF</PulseButton
+          >
         </template>
       </ReportHeader>
 
@@ -162,11 +168,5 @@ onMounted(load);
 .consolidated-report__alert-mission {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-}
-
-@media print {
-  .consolidated-report {
-    max-width: none;
-  }
 }
 </style>

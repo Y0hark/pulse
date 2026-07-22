@@ -17,6 +17,8 @@ import { buildDraftFromPrevious } from '../services/prefill.js';
 import { invalidateTeamDashboard } from '../services/aggregation.js';
 import { getCompletionReport } from '../services/completion.js';
 import { getTeamWalkthrough } from '../services/walkthrough.js';
+import { renderPdf } from '../services/pdfExport.js';
+import { renderCompletionPdf } from '../pdf/templates/completion.js';
 import type { ReportWritePayload } from '../reports/types.js';
 
 async function resolvePeriod(db: Queryable, isoWeek: unknown) {
@@ -162,6 +164,24 @@ export function createReportsRouter(db: Queryable): Router {
 
     const completion = await getCompletionReport(db, req.teamId!, period.id);
     res.status(200).json({ period, completion });
+  });
+
+  // Registered before the ':reportId' catch-all below for the same reason as /reports/completion.
+  router.get('/teams/:team/reports/completion/export.pdf', async (req, res) => {
+    const period = await resolvePeriod(db, req.query.period);
+    if (!period) {
+      res.status(404).json({ error: 'period_not_found' });
+      return;
+    }
+
+    const completion = await getCompletionReport(db, req.teamId!, period.id);
+    const html = renderCompletionPdf(period, completion, { teamName: req.params.team, generatedAt: new Date().toISOString() });
+    const pdf = await renderPdf(html);
+
+    res.status(200);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="pulse-completion-${period.isoWeek}.pdf"`);
+    res.send(pdf);
   });
 
   // Registered after the /reports/mine* and /reports/completion routes above: ':reportId'

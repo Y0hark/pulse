@@ -17,7 +17,7 @@ const STATUS_VARIANT: Record<CompletionStatus, 'success' | 'warning' | 'danger'>
   missing: 'danger',
 };
 
-const { exportPdf, copyLink } = useReportActions();
+const { exportPdf, exportingPdf, copyLink } = useReportActions();
 
 const period = ref<ReportPeriod | null>(null);
 const completion = ref<CompletionReport | null>(null);
@@ -81,7 +81,13 @@ onMounted(load);
       >
         <template #actions>
           <PulseButton variant="secondary" size="sm" @click="copyLink">Copy link</PulseButton>
-          <PulseButton variant="secondary" size="sm" @click="exportPdf">Export PDF</PulseButton>
+          <PulseButton
+            variant="secondary"
+            size="sm"
+            :loading="exportingPdf"
+            @click="exportPdf(`/teams/${TEAM}/reports/completion/export.pdf?period=${period.isoWeek}`)"
+            >Export PDF</PulseButton
+          >
         </template>
       </ReportHeader>
 
@@ -124,11 +130,5 @@ onMounted(load);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--space-4);
-}
-
-@media print {
-  .completion-report {
-    max-width: none;
-  }
 }
 </style>

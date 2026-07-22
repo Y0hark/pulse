@@ -2,6 +2,8 @@ import { Router } from 'express';
 import type { Queryable } from '../db/pool.js';
 import { getFrozenPeriodsForTeam, getPeriodById } from '../db/reports.js';
 import { freezeTeamPeriod, getFrozenSnapshot } from '../services/freeze.js';
+import { renderPdf } from '../services/pdfExport.js';
+import { renderSnapshotPdf } from '../pdf/templates/snapshot.js';
 
 function parsePeriodId(raw: string): number | null {
   const id = Number(raw);
@@ -57,6 +59,34 @@ export function createPeriodsRouter(db: Queryable): Router {
       return;
     }
     res.status(200).json({ period, snapshot });
+  });
+
+  router.get('/teams/:team/periods/:id/snapshot/export.pdf', async (req, res) => {
+    const periodId = parsePeriodId(req.params.id);
+    if (periodId === null) {
+      res.status(400).json({ error: 'invalid_period' });
+      return;
+    }
+
+    const period = await getPeriodById(db, periodId);
+    if (!period) {
+      res.status(404).json({ error: 'period_not_found' });
+      return;
+    }
+
+    const snapshot = await getFrozenSnapshot(db, req.teamId!, periodId);
+    if (!snapshot) {
+      res.status(404).json({ error: 'not_frozen' });
+      return;
+    }
+
+    const html = renderSnapshotPdf(period, snapshot.payload, { frozenAt: snapshot.frozenAt });
+    const pdf = await renderPdf(html);
+
+    res.status(200);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="pulse-snapshot-${period.isoWeek}.pdf"`);
+    res.send(pdf);
   });
 
   return router;

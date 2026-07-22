@@ -53,5 +53,18 @@ export const useSessionStore = defineStore('session', {
       this.currentTeamSlug = slug;
       localStorage.setItem(CURRENT_TEAM_STORAGE_KEY, slug);
     },
+
+    async updateDisplayName(displayName: string): Promise<void> {
+      const res = await api.updateMyDisplayName(displayName);
+      if (this.user) this.user.displayName = res.displayName;
+    },
+
+    async logout(): Promise<void> {
+      await api.logout();
+      this.user = null;
+      this.currentTeamSlug = null;
+      this.loaded = false;
+      localStorage.removeItem(CURRENT_TEAM_STORAGE_KEY);
+    },
   },
 });

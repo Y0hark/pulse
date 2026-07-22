@@ -72,10 +72,4 @@ const generatedLabel = computed(() => {
   gap: var(--space-2);
   flex-wrap: wrap;
 }
-
-@media print {
-  .report-header__actions {
-    display: none;
-  }
-}
 </style>

@@ -85,6 +85,18 @@ describe('GET /teams/:team/periods/history', () => {
   });
 });
 
+describe('GET /teams/:team/reports/completion/export.pdf', () => {
+  it('streams a branded PDF for the requested period', async () => {
+    const { app, period } = await setup();
+
+    const res = await request(app).get(`/teams/ceva-logistics/reports/completion/export.pdf?period=${period.iso_week}`).expect(200);
+
+    expect(res.headers['content-type']).toBe('application/pdf');
+    expect(res.headers['content-disposition']).toContain(`pulse-completion-${period.iso_week}.pdf`);
+    expect(res.body.length).toBeGreaterThan(1000);
+  }, 20000);
+});
+
 describe('GET /missions/consolidated-report', () => {
   it('rolls up totals across all active missions for the period', async () => {
     const { app, db, period } = await setup();

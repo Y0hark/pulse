@@ -303,6 +303,10 @@ export function requestMagicLink(email: string): Promise<{ ok: boolean }> {
   });
 }
 
+export function logout(): Promise<{ ok: boolean }> {
+  return request('/auth/logout', { method: 'POST' });
+}
+
 export interface TeamMembership {
   team: { id: string; name: string; slug: string };
   role: 'member' | 'manager' | 'admin';
@@ -311,6 +315,7 @@ export interface TeamMembership {
 export interface CurrentUser {
   id: string;
   email: string;
+  displayName: string | null;
   profile: { code: string; label: string } | null;
   isGlobalAdmin: boolean;
   teams: TeamMembership[];
@@ -318,6 +323,13 @@ export interface CurrentUser {
 
 export function getMe(): Promise<CurrentUser> {
   return request('/me');
+}
+
+export function updateMyDisplayName(displayName: string): Promise<{ displayName: string }> {
+  return request('/me', {
+    method: 'PATCH',
+    body: JSON.stringify({ displayName }),
+  });
 }
 
 export type MissionStatus = 'active' | 'archived';
