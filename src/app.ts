@@ -67,7 +67,7 @@ export function createApp(deps: AppDeps): Express {
     res.status(200).json({ ok: true });
   });
 
-  app.use(createAuthRouter(deps.authProvider));
+  app.use(createAuthRouter(deps.authProvider, deps.config?.corsOrigin));
   app.use(createMeRouter(deps.authProvider, deps.db));
   app.use(createMissionsRouter(deps.authProvider, deps.db));
   app.use(createUsersRouter(deps.authProvider, deps.db));
