@@ -449,6 +449,87 @@ export function removeMissionMember(slug: string, userId: string): Promise<void>
   });
 }
 
+// --- Settings > Users ---
+
+export interface UserMissionRole {
+  id: string;
+  name: string;
+  slug: string;
+  role: 'member' | 'manager' | 'admin';
+}
+
+export interface UserAdminSummary {
+  id: string;
+  email: string;
+  displayName: string | null;
+  profile: { code: string; label: string } | null;
+  isGlobalAdmin: boolean;
+  isActive: boolean;
+  missions: UserMissionRole[];
+}
+
+export interface UserCreateInput {
+  email: string;
+  displayName?: string | null;
+  profileId?: number | null;
+}
+
+export interface UserUpdateInput {
+  displayName?: string | null;
+  profileId?: number | null;
+}
+
+export function getUsers(): Promise<{ users: UserAdminSummary[] }> {
+  return request('/users');
+}
+
+export function createUser(input: UserCreateInput): Promise<{ user: UserRecordSummary }> {
+  return request('/users', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export interface UserRecordSummary {
+  id: string;
+  email: string;
+  displayName: string | null;
+  isGlobalAdmin: boolean;
+}
+
+export function updateUser(userId: string, input: UserUpdateInput): Promise<{ ok: boolean }> {
+  return request(`/users/${encodeURIComponent(userId)}`, { method: 'PUT', body: JSON.stringify(input) });
+}
+
+export function activateUser(userId: string): Promise<{ ok: boolean }> {
+  return request(`/users/${encodeURIComponent(userId)}/activate`, { method: 'POST' });
+}
+
+export function deactivateUser(userId: string): Promise<{ ok: boolean }> {
+  return request(`/users/${encodeURIComponent(userId)}/deactivate`, { method: 'POST' });
+}
+
+export function setUserGlobalAdmin(userId: string, isGlobalAdmin: boolean): Promise<{ ok: boolean }> {
+  return request(`/users/${encodeURIComponent(userId)}/global-admin`, {
+    method: 'PUT',
+    body: JSON.stringify({ isGlobalAdmin }),
+  });
+}
+
+export function setUserMissionRole(
+  userId: string,
+  missionSlug: string,
+  role: 'member' | 'manager' | 'admin',
+): Promise<{ ok: boolean }> {
+  return request(`/users/${encodeURIComponent(userId)}/missions/${encodeURIComponent(missionSlug)}/role`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  });
+}
+
+export function removeUserFromMission(userId: string, missionSlug: string): Promise<void> {
+  return request(`/users/${encodeURIComponent(userId)}/missions/${encodeURIComponent(missionSlug)}`, {
+    method: 'DELETE',
+  });
+}
+
 // --- Premium reports ---
 
 export type CompletionStatus = 'on_time' | 'late' | 'missing';

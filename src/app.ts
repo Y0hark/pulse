@@ -9,6 +9,7 @@ import { createMeRouter } from './routes/me.js';
 import { createMissionsRouter } from './routes/missions.js';
 import { createPeriodsRouter } from './routes/periods.js';
 import { createReportsRouter } from './routes/reports.js';
+import { createUsersRouter } from './routes/users.js';
 import { requireAuth } from './middleware/requireAuth.js';
 import { requireTeamMember } from './middleware/requireTeamMember.js';
 
@@ -33,6 +34,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(createAuthRouter(deps.authProvider));
   app.use(createMeRouter(deps.authProvider, deps.db));
   app.use(createMissionsRouter(deps.authProvider, deps.db));
+  app.use(createUsersRouter(deps.authProvider, deps.db));
   app.use('/teams/:team', requireAuth(deps.authProvider), requireTeamMember(deps.db));
   app.use(createReportsRouter(deps.db));
   app.use(createDashboardRouter(deps.db));

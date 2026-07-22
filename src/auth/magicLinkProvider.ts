@@ -95,6 +95,12 @@ export class MagicLinkAuthProvider implements AuthProvider {
     if (!sessionId) return null;
     const record = await this.deps.sessionStore.get(sessionId);
     if (!record) return null;
+
+    // Deactivated users (Settings > Users) lose access immediately: every request
+    // re-checks is_active here rather than only at login time.
+    const userResult = await this.deps.db.query(`SELECT is_active FROM users WHERE id = $1`, [record.userId]);
+    if (userResult.rows.length === 0 || userResult.rows[0].is_active === false) return null;
+
     return { userId: record.userId };
   }
 

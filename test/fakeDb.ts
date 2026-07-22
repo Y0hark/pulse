@@ -16,6 +16,7 @@ interface UserRow {
   profile_id: number | null;
   profile_code: string | null;
   is_global_admin: boolean;
+  is_active: boolean;
 }
 
 interface TeamRow {
@@ -157,6 +158,7 @@ export class FakeDb implements Queryable {
     displayName: string | null = null,
     profileCode: string | null = null,
     isGlobalAdmin = false,
+    isActive = true,
   ): UserRow {
     const row = {
       id,
@@ -165,6 +167,7 @@ export class FakeDb implements Queryable {
       profile_id: null,
       profile_code: profileCode,
       is_global_admin: isGlobalAdmin,
+      is_active: isActive,
     };
     this.users.push(row);
     return row;
@@ -213,14 +216,108 @@ export class FakeDb implements Queryable {
       return { rows: [{ id: row.id }] };
     }
 
+    if (sql.startsWith('INSERT INTO users (email, display_name, profile_id)')) {
+      const [email, displayName, profileId] = params as [string, string | null, number | null];
+      if (this.users.some((u) => u.email === email)) return { rows: [] };
+      const row: UserRow = {
+        id: randomUUID(),
+        email,
+        display_name: displayName,
+        profile_id: profileId,
+        profile_code: null,
+        is_global_admin: false,
+        is_active: true,
+      };
+      this.users.push(row);
+      return { rows: [row] };
+    }
+
+    if (sql.startsWith('SELECT 1 FROM users WHERE email = $1')) {
+      const [email] = params as [string];
+      return { rows: this.users.some((u) => u.email === email) ? [{ '?column?': 1 }] : [] };
+    }
+
     if (sql.startsWith('INSERT INTO users')) {
       const [email] = params as [string];
       let row = this.users.find((u) => u.email === email);
       if (!row) {
-        row = { id: randomUUID(), email, display_name: null, profile_id: null, profile_code: null, is_global_admin: false };
+        row = {
+          id: randomUUID(),
+          email,
+          display_name: null,
+          profile_id: null,
+          profile_code: null,
+          is_global_admin: false,
+          is_active: true,
+        };
         this.users.push(row);
       }
       return { rows: [row] };
+    }
+
+    if (sql.startsWith('SELECT is_active FROM users WHERE id = $1')) {
+      const [userId] = params as [string];
+      const row = this.users.find((u) => u.id === userId);
+      return { rows: row ? [{ is_active: row.is_active }] : [] };
+    }
+
+    if (sql.startsWith('SELECT u.id, u.email, u.display_name, u.is_global_admin, u.is_active, p.code AS profile_code')) {
+      const rows = [...this.users]
+        .sort((a, b) => (a.display_name ?? a.email).localeCompare(b.display_name ?? b.email))
+        .map((u) => ({
+          id: u.id,
+          email: u.email,
+          display_name: u.display_name,
+          is_global_admin: u.is_global_admin,
+          is_active: u.is_active,
+          profile_code: u.profile_code,
+          profile_label: u.profile_code,
+        }));
+      return { rows };
+    }
+
+    if (sql.startsWith('SELECT tm.user_id, t.id AS team_id, t.name, t.slug, tm.role')) {
+      const rows = this.teamMembers.map((m) => {
+        const team = this.teams.find((t) => t.id === m.team_id)!;
+        return { user_id: m.user_id, team_id: team.id, name: team.name, slug: team.slug, role: m.role };
+      });
+      return { rows };
+    }
+
+    if (sql.startsWith('UPDATE users SET display_name = $2, profile_id = $3 WHERE id = $1')) {
+      const [userId, displayName, profileId] = params as [string, string | null, number | null];
+      const row = this.users.find((u) => u.id === userId);
+      if (row) {
+        row.display_name = displayName;
+        row.profile_id = profileId;
+      }
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('UPDATE users SET is_active = $2 WHERE id = $1')) {
+      const [userId, isActive] = params as [string, boolean];
+      const row = this.users.find((u) => u.id === userId);
+      if (row) row.is_active = isActive;
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('UPDATE users SET is_global_admin = $2 WHERE id = $1')) {
+      const [userId, isGlobalAdmin] = params as [string, boolean];
+      const row = this.users.find((u) => u.id === userId);
+      if (row) row.is_global_admin = isGlobalAdmin;
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('SELECT COUNT(*) AS count FROM users WHERE is_global_admin = true')) {
+      return { rows: [{ count: this.users.filter((u) => u.is_global_admin).length }] };
+    }
+
+    if (sql.startsWith('INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, $3)')) {
+      const [teamId, userId, role] = params as [string, string, string];
+      const existing = this.teamMembers.find((m) => m.team_id === teamId && m.user_id === userId);
+      if (existing) existing.role = role;
+      else this.teamMembers.push({ team_id: teamId, user_id: userId, role, leaderboard_opt_in: false });
+      return { rows: [] };
     }
 
     if (sql.startsWith('SELECT u.id, u.email, u.display_name, u.is_global_admin')) {

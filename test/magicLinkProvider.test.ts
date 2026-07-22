@@ -77,4 +77,29 @@ describe('MagicLinkAuthProvider', () => {
     await provider.issueChallenge('someone@ceva-logistics.com');
     expect(mailer.sent).toHaveLength(1);
   });
+
+  it('rejects a deactivated user\'s session on the very next getSession call', async () => {
+    const { provider, mailer, db } = buildProvider();
+    await provider.issueChallenge('a@example.com');
+    const token = tokenFromLink(mailer.sent[0].link);
+    const result = await provider.verify(token);
+    if (!result.ok) throw new Error('expected verify to succeed');
+
+    let cookieValue = '';
+    const fakeRes = {
+      getHeader: () => undefined,
+      setHeader: (_name: string, value: string) => {
+        cookieValue = Array.isArray(value) ? value[0] : value;
+      },
+    } as unknown as import('node:http').ServerResponse;
+    await provider.attachSession(fakeRes, result.userId);
+    const sessionId = decodeURIComponent(cookieValue.split(';')[0].split('=')[1]);
+    const fakeReq = { headers: { cookie: `pulse_session=${sessionId}` } } as unknown as import('node:http').IncomingMessage;
+
+    expect(await provider.getSession(fakeReq)).toEqual({ userId: result.userId });
+
+    db.users.find((u) => u.id === result.userId)!.is_active = false;
+
+    expect(await provider.getSession(fakeReq)).toBeNull();
+  });
 });
