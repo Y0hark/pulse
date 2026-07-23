@@ -13,9 +13,12 @@ services:
       - key: DATABASE_URL
         sync: false # Neon connection string, add ?sslmode=require
       - key: APP_BASE_URL
-        sync: false # this API's own public Render URL, e.g. https://pulse-api.onrender.com
+        sync: false # the frontend's own URL, e.g. https://pulse.example.workers.dev — magic
+        # links point here (not at this Render URL) so /auth/callback is proxied through
+        # the frontend's Worker (see frontend/src/worker.ts), keeping the session cookie
+        # first-party instead of third-party and subject to browser blocking.
       - key: CORS_ORIGIN
-        sync: false # Cloudflare Pages URL, e.g. https://pulse.pages.dev
+        sync: false # the frontend's Cloudflare Workers URL, e.g. https://pulse.example.workers.dev
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_FROM

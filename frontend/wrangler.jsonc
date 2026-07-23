@@ -1,12 +1,20 @@
 {
   "name": "pulse",
   "compatibility_date": "2026-07-22",
+  "main": "src/worker.ts",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     // Cloudflare's Workers Assets SPA fallback (Vue Router uses history mode).
     // Using this instead of a public/_redirects catch-all avoids an infinite-loop
     // conflict between the two mechanisms (error code 100324).
     "not_found_handling": "single-page-application"
+  },
+  "vars": {
+    // API paths (/auth, /me, /teams, /missions, /users) are proxied to this origin by
+    // src/worker.ts, so the session cookie stays first-party instead of being blocked
+    // as a third-party cookie by browsers.
+    "API_ORIGIN": "https://pulse-api-lffc.onrender.com"
   },
   "observability": {
     "enabled": true
