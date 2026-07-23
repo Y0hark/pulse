@@ -21,7 +21,9 @@ export default {
     const url = new URL(request.url);
     if (isApiPath(url.pathname)) {
       const target = new URL(url.pathname + url.search, env.API_ORIGIN);
-      return fetch(new Request(target, request));
+      // 'manual' stops fetch() from silently following the callback route's 302 itself —
+      // without it, the Set-Cookie and Location on that redirect never reach the browser.
+      return fetch(new Request(target, request), { redirect: 'manual' });
     }
     return env.ASSETS.fetch(request);
   },
