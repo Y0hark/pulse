@@ -91,14 +91,18 @@ export async function getUserWithTeams(db: Queryable, userId: string): Promise<U
   if (userResult.rows.length === 0) return null;
   const row = userResult.rows[0];
 
-  const teamsResult = await db.query(
-    `SELECT t.id, t.name, t.slug, tm.role
-     FROM team_members tm
-     JOIN teams t ON t.id = tm.team_id
-     WHERE tm.user_id = $1
-     ORDER BY t.name`,
-    [userId],
-  );
+  // Global admins are implicitly 'admin' on every team (see requireTeamMember), so their
+  // team list must include all teams, not just ones with an actual team_members row.
+  const teamsResult = row.is_global_admin
+    ? await db.query(`SELECT id, name, slug, 'admin' AS role FROM teams ORDER BY name`)
+    : await db.query(
+        `SELECT t.id, t.name, t.slug, tm.role
+         FROM team_members tm
+         JOIN teams t ON t.id = tm.team_id
+         WHERE tm.user_id = $1
+         ORDER BY t.name`,
+        [userId],
+      );
 
   return {
     id: row.id,
