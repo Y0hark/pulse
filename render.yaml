@@ -12,6 +12,10 @@ services:
         value: 3000
       - key: DATABASE_URL
         sync: false # Neon connection string, add ?sslmode=require
+      - key: REDIS_URL
+        sync: false # Upstash connection string — use the rediss:// (TLS) form, not redis://,
+        # so ioredis enables TLS automatically. Without this, sessions live in-process
+        # (InMemorySessionStore) and are wiped on every deploy/restart.
       - key: APP_BASE_URL
         sync: false # the frontend's own URL, e.g. https://pulse.example.workers.dev — magic
         # links point here (not at this Render URL) so /auth/callback is proxied through
