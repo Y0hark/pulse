@@ -8,7 +8,12 @@
     // Cloudflare's Workers Assets SPA fallback (Vue Router uses history mode).
     // Using this instead of a public/_redirects catch-all avoids an infinite-loop
     // conflict between the two mechanisms (error code 100324).
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Without this, Cloudflare serves static assets (including the SPA fallback)
+    // BEFORE invoking src/worker.ts at all, so /auth, /me, /teams, /missions, and
+    // /users requests never reach the Worker's proxy logic — they just get the
+    // cached index.html back with a 200, and the API is never called.
+    "run_worker_first": true
   },
   "vars": {
     // API paths (/auth, /me, /teams, /missions, /users) are proxied to this origin by
