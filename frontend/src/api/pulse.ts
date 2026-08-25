@@ -73,7 +73,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   });
-  const body = await res.json().catch(() => null);
+  if (res.status === 204 || res.status === 304) return null as T;
+
+  const text = await res.text();
+  let body: unknown = null;
+  if (text !== '') {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      if (res.ok) throw new Error(`Expected JSON from ${path} but got: ${text.slice(0, 200)}`);
+    }
+  }
   if (!res.ok) throw new ApiError(res.status, body);
   return body as T;
 }

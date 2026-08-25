@@ -48,6 +48,15 @@ function applyCors(app: Express, origin: string | undefined): void {
 
 export function createApp(deps: AppDeps): Express {
   const app = express();
+  // Every route here is a dynamic, session-authenticated API response — never something a
+  // browser or intermediary should cache or conditionally-GET. Without this, Express's default
+  // auto-generated ETag makes it reply 304 (empty body) to a repeat GET once the browser sends
+  // back If-None-Match, and API clients that don't special-case 304 choke on the empty body.
+  app.set('etag', false);
+  app.use((_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
   applyCors(app, deps.config?.corsOrigin);
   app.use(express.json());
   const gamificationConfig = deps.gamificationConfig ?? DEFAULT_GAMIFICATION_CONFIG;
