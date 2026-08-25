@@ -9,7 +9,7 @@ vi.mock('vue-router', () => ({
 
 vi.mock('../../api/pulse', async () => {
   const actual = await vi.importActual<typeof import('../../api/pulse')>('../../api/pulse');
-  return { ...actual, getMe: vi.fn(), getUsers: vi.fn(), getMissions: vi.fn() };
+  return { ...actual, getMe: vi.fn(), getUsers: vi.fn(), getMissions: vi.fn(), getProfiles: vi.fn() };
 });
 
 function mockMe(overrides: Partial<Record<string, unknown>> = {}) {
@@ -45,6 +45,7 @@ describe('SettingsView', () => {
     (api.getMe as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockMe({ isGlobalAdmin: true }));
     (api.getUsers as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ users: [] });
     (api.getMissions as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ missions: [] });
+    (api.getProfiles as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ profiles: [] });
 
     const wrapper = mount(SettingsView);
     await flushPromises();

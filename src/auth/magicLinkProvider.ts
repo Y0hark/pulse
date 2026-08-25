@@ -2,7 +2,7 @@ import { randomBytes, createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { PulseConfig } from '../config/pulse.js';
 import type { Queryable } from '../db/pool.js';
-import { upsertUserByEmail } from '../db/users.js';
+import { resolveLoginUser } from '../db/users.js';
 import type { AuthProvider, Session, VerifyResult } from './types.js';
 import type { Mailer } from './mailer.js';
 import type { SessionStore } from './sessionStore.js';
@@ -36,6 +36,12 @@ export class MagicLinkAuthProvider implements AuthProvider {
       // or denies whether the domain (or email) is recognized.
       return;
     }
+
+    // Only send a link to emails an admin has already registered (Settings > Users, or a
+    // mission member invite) — otherwise anyone at an allowed domain could self-provision.
+    // Silently no-op here too, for the same reason as the domain check above.
+    const user = await resolveLoginUser(this.deps.db, email, config.bootstrapAdminEmail);
+    if (!user) return;
 
     const token = randomBytes(32).toString('base64url');
     const tokenHash = hashToken(token);
@@ -75,7 +81,8 @@ export class MagicLinkAuthProvider implements AuthProvider {
     );
     if (claim.rows.length === 0) return { ok: false, reason: 'already_used' };
 
-    const user = await upsertUserByEmail(this.deps.db, row.email, this.deps.config.bootstrapAdminEmail);
+    const user = await resolveLoginUser(this.deps.db, row.email, this.deps.config.bootstrapAdminEmail);
+    if (!user) return { ok: false, reason: 'not_registered' };
     return { ok: true, userId: user.id };
   }
 

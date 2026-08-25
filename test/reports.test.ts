@@ -166,7 +166,7 @@ describe('GET /teams/:team/reports/:reportId', () => {
     const { app, reportId } = await setupWithSecondMember();
     const res = await request(app).get(`/teams/ceva-logistics/reports/${reportId}`).expect(200);
 
-    expect(res.body.owner).toEqual({ id: 'fake-user-1', displayName: 'Owner Person' });
+    expect(res.body.owner).toEqual({ id: 'fake-user-1', displayName: 'Owner Person', profile: null });
     expect(res.body.report.projectCards).toHaveLength(1);
     expect(res.body.report.majorTasksToDo).toEqual(['Ship v2']);
   });

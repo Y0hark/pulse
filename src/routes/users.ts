@@ -5,6 +5,7 @@ import { getMissionRecord, isGlobalAdmin, removeMissionMember, type MissionMembe
 import {
   countGlobalAdmins,
   createUser,
+  listProfiles,
   listUsers,
   setUserActive,
   setUserGlobalAdmin,
@@ -36,6 +37,33 @@ function parseUpdateInput(body: unknown): UserUpdateInput | null {
   };
 }
 
+interface BulkCreateInput {
+  emails: string[];
+  missionSlug: string | null;
+  role: MissionMember['role'];
+}
+
+function parseBulkInput(body: unknown): BulkCreateInput | null {
+  const b = (body ?? {}) as Record<string, unknown>;
+  if (!Array.isArray(b.emails)) return null;
+  const emails = Array.from(
+    new Set(
+      b.emails
+        .filter((e): e is string => typeof e === 'string')
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e !== ''),
+    ),
+  );
+  if (emails.length === 0) return null;
+
+  const role = typeof b.role === 'string' && MISSION_ROLES.includes(b.role as MissionMember['role'])
+    ? (b.role as MissionMember['role'])
+    : 'member';
+  const missionSlug = typeof b.missionSlug === 'string' && b.missionSlug.trim() !== '' ? b.missionSlug.trim() : null;
+
+  return { emails, missionSlug, role };
+}
+
 /** Settings > Users: global-admin-only administration of the user directory
  * (create/edit/activate/deactivate, global-admin toggle, per-mission role assignment).
  * Distinct from /me (self-service) and /missions/:slug/members (adds by email at 'member' role). */
@@ -47,6 +75,43 @@ export function createUsersRouter(authProvider: AuthProvider, db: Queryable): Ro
   router.get('/users', auth, admin, async (_req, res) => {
     const users = await listUsers(db);
     res.status(200).json({ users });
+  });
+
+  // Job/profile picker options for Settings > Users (new-user modal, manage-user modal).
+  router.get('/profiles', auth, admin, async (_req, res) => {
+    const profiles = await listProfiles(db);
+    res.status(200).json({ profiles });
+  });
+
+  router.post('/users/bulk', auth, admin, async (req, res) => {
+    const input = parseBulkInput(req.body);
+    if (!input) {
+      res.status(400).json({ error: 'invalid_input' });
+      return;
+    }
+
+    let mission = null;
+    if (input.missionSlug) {
+      mission = await getMissionRecord(db, input.missionSlug);
+      if (!mission) {
+        res.status(404).json({ error: 'mission_not_found' });
+        return;
+      }
+    }
+
+    const created: string[] = [];
+    const skipped: string[] = [];
+    for (const email of input.emails) {
+      const user = await createUser(db, { email });
+      if (!user) {
+        skipped.push(email);
+        continue;
+      }
+      created.push(email);
+      if (mission) await setUserMissionRole(db, mission.id, user.id, input.role);
+    }
+
+    res.status(200).json({ created, skipped });
   });
 
   router.post('/users', auth, admin, async (req, res) => {

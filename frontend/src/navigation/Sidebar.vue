@@ -1,5 +1,13 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useSessionStore } from '../stores/session';
 import { navItems } from './navItems';
+
+const session = useSessionStore();
+
+const visibleNavItems = computed(() =>
+  navItems.filter((item) => !item.adminOnly || session.user?.isGlobalAdmin),
+);
 </script>
 
 <template>
@@ -10,7 +18,7 @@ import { navItems } from './navItems';
     </div>
     <nav class="sidebar__nav">
       <router-link
-        v-for="item in navItems"
+        v-for="item in visibleNavItems"
         :key="item.routeName"
         :to="{ name: item.routeName }"
         class="sidebar__link"

@@ -2,6 +2,9 @@ export interface NavItem {
   label: string;
   routeName: string;
   icon: string;
+  /** Hidden from non-global-admins — the destination route enforces this too, this just
+   * keeps a user from seeing a link they can't use. */
+  adminOnly?: boolean;
 }
 
 export const navItems: NavItem[] = [
@@ -9,7 +12,6 @@ export const navItems: NavItem[] = [
   { label: 'Missions', routeName: 'missions', icon: '🧭' },
   { label: 'Weekly Pulse', routeName: 'weekly-pulse', icon: '📝' },
   { label: 'Reports', routeName: 'reports', icon: '📁' },
-  { label: 'Team & Users', routeName: 'team', icon: '👥' },
-  { label: 'Settings', routeName: 'settings', icon: '⚙️' },
+  { label: 'Settings', routeName: 'settings', icon: '⚙️', adminOnly: true },
   { label: 'Help', routeName: 'help', icon: '❓' },
 ];

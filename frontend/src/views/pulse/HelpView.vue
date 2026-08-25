@@ -10,8 +10,8 @@ import { PulseCard } from '../../components/ui';
         <li><strong>Weekly Pulse</strong> — submit your workload, delivered/in-flight work and blockers each week.</li>
         <li><strong>Missions</strong> — see the teams you are staffed on and switch your current mission context.</li>
         <li><strong>Dashboard</strong> — track team-wide workload and submission status for the current period.</li>
-        <li><strong>Team & Users</strong> — check who has submitted for the current period.</li>
-        <li><strong>Reports</strong> — open individual weekly reports and frozen period snapshots.</li>
+        <li><strong>Reports</strong> — open individual weekly reports, frozen period snapshots, and the team walkthrough.</li>
+        <li><strong>Settings</strong> (admins) — manage users, roles, jobs, and missions for the whole organization.</li>
       </ul>
     </PulseCard>
   </section>

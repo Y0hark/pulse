@@ -13,10 +13,12 @@ import {
   upsertReport,
 } from '../db/reports.js';
 import { getUserById } from '../db/users.js';
+import { getTeamFreezeConfig } from '../db/teams.js';
 import { buildDraftFromPrevious } from '../services/prefill.js';
 import { invalidateTeamDashboard } from '../services/aggregation.js';
 import { getCompletionReport } from '../services/completion.js';
 import { getTeamWalkthrough } from '../services/walkthrough.js';
+import { computeFreezeInstant } from '../services/freeze.js';
 import { renderPdf } from '../services/pdfExport.js';
 import { renderCompletionPdf } from '../pdf/templates/completion.js';
 import type { ReportWritePayload } from '../reports/types.js';
@@ -60,7 +62,10 @@ export function createReportsRouter(db: Queryable): Router {
     const existing = await getReportForPeriod(db, req.userId!, req.teamId!, period.id);
     const draft = existing ?? (await buildDraftFromPrevious(await getPreviousReport(db, req.userId!, req.teamId!, period.id)));
 
-    res.status(200).json({ period, status, draft });
+    const freezeConfig = await getTeamFreezeConfig(db, req.teamId!);
+    const deadline = freezeConfig ? computeFreezeInstant(period.endsOn, freezeConfig).toUTC().toISO() : null;
+
+    res.status(200).json({ period, status, draft, deadline });
   });
 
   router.get('/teams/:team/reports', async (req, res) => {
@@ -208,7 +213,7 @@ export function createReportsRouter(db: Queryable): Router {
       report: found.report,
       period,
       periodStatus,
-      owner: owner ? { id: owner.id, displayName: owner.displayName ?? owner.email } : null,
+      owner: owner ? { id: owner.id, displayName: owner.displayName ?? owner.email, profile: owner.profile } : null,
       isOwner,
       canEdit,
     });

@@ -41,6 +41,17 @@ const nextDeadlineLabel = computed(() => {
   return `${DOW_LABELS[mission.value.freezeDow]} at ${mission.value.freezeTime.slice(0, 5)} (${mission.value.timezone})`;
 });
 
+const memberRows = computed(
+  () =>
+    mission.value?.members.map((m) => ({
+      id: m.userId,
+      name: m.displayName ?? m.email,
+      email: m.email,
+      role: m.role,
+      job: m.profile?.label ?? '—',
+    })) ?? [],
+);
+
 const recentReportsRows = computed(
   () =>
     mission.value?.recentReports.map((r) => ({
@@ -130,6 +141,26 @@ onMounted(() => {
       </div>
 
       <section class="mission-detail__reports">
+        <div class="mission-detail__section-header">
+          <h2>Members</h2>
+          <button v-if="isAdmin" type="button" class="mission-detail__manage-link" @click="router.push({ name: 'settings' })">
+            Manage job &amp; roles in Settings
+          </button>
+        </div>
+        <PulseTable
+          :columns="[
+            { key: 'name', label: 'Name' },
+            { key: 'email', label: 'Email' },
+            { key: 'job', label: 'Job' },
+            { key: 'role', label: 'Role' },
+          ]"
+          :rows="memberRows"
+        >
+          <template #empty>No one is staffed on this mission yet.</template>
+        </PulseTable>
+      </section>
+
+      <section class="mission-detail__reports">
         <h2>Recent reports</h2>
         <PulseTable
           :columns="[
@@ -212,5 +243,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+}
+
+.mission-detail__section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.mission-detail__manage-link {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
 }
 </style>

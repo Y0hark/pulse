@@ -5,6 +5,7 @@ import { loadConfig } from '../src/config/pulse.js';
 import { MagicLinkAuthProvider } from '../src/auth/magicLinkProvider.js';
 import { InMemorySessionStore } from '../src/auth/sessionStore.js';
 import type { Mailer } from '../src/auth/mailer.js';
+import { randomUUID } from 'node:crypto';
 import { FakeDb } from './fakeDb.js';
 import { FakeAuthProvider } from './fakeAuthProvider.js';
 
@@ -30,6 +31,7 @@ describe('full magic-link flow (MagicLinkAuthProvider)', () => {
     const sessionStore = new InMemorySessionStore();
     const authProvider = new MagicLinkAuthProvider({ db, mailer, sessionStore, config });
     const app = createApp({ authProvider, db });
+    db.seedUser(randomUUID(), 'user@example.com');
 
     await request(app).get('/me').expect(401);
     await request(app).get('/protected/ping').expect(401);

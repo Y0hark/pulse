@@ -20,6 +20,7 @@ function emptyDraft(): ReportDraft {
 interface ReportState {
   team: string;
   period: ReportPeriod | null;
+  deadline: string | null;
   status: PeriodStatus;
   draft: ReportDraft;
   loading: boolean;
@@ -36,6 +37,7 @@ export const useReportStore = defineStore('report', {
   state: (): ReportState => ({
     team: '',
     period: null,
+    deadline: null,
     status: 'open',
     draft: emptyDraft(),
     loading: false,
@@ -62,6 +64,7 @@ export const useReportStore = defineStore('report', {
       try {
         const res = await api.getCurrentPeriod(team);
         this.period = res.period;
+        this.deadline = res.deadline;
         this.status = res.status;
         this.draft = res.draft;
         this.justSubmitted = 'submittedAt' in res.draft && res.draft.submittedAt !== null;

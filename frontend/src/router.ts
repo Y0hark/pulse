@@ -97,7 +97,12 @@ export const router = createRouter({
           props: true,
           meta: { title: 'Period Snapshot' },
         },
-        { path: 'team', name: 'team', component: TeamWalkthroughView, meta: { title: 'Team & Users' } },
+        {
+          path: 'reports/walkthrough',
+          name: 'reports-walkthrough',
+          component: TeamWalkthroughView,
+          meta: { title: 'Walkthrough' },
+        },
         { path: 'settings', name: 'settings', component: SettingsView, meta: { title: 'Settings' } },
         { path: 'help', name: 'help', component: HelpView, meta: { title: 'Help' } },
         { path: ':pathMatch(.*)*', name: 'not-found', component: NotFoundView, meta: { title: 'Not found' } },

@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import AppShell from '../layout/AppShell.vue';
 import Sidebar from './Sidebar.vue';
+import { useSessionStore } from '../stores/session';
 import { navItems } from './navItems';
 
 function stub(name: string) {
@@ -27,15 +28,35 @@ function buildRouter() {
 }
 
 describe('Sidebar', () => {
-  it('renders a link for every nav section', async () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('renders a link for every non-admin-only nav section when no session is loaded', async () => {
     const router = buildRouter();
     await router.push('/dashboard');
     await router.isReady();
 
     const wrapper = mount(Sidebar, { global: { plugins: [router] } });
 
+    const visible = navItems.filter((item) => !item.adminOnly);
+    expect(wrapper.findAll('a')).toHaveLength(visible.length);
+    visible.forEach((item) => expect(wrapper.text()).toContain(item.label));
+    expect(wrapper.text()).not.toContain('Settings');
+  });
+
+  it('shows admin-only nav sections once the session reports a global admin', async () => {
+    const router = buildRouter();
+    await router.push('/dashboard');
+    await router.isReady();
+
+    const session = useSessionStore();
+    session.user = { id: 'u1', email: 'admin@example.com', displayName: null, profile: null, isGlobalAdmin: true, teams: [] };
+
+    const wrapper = mount(Sidebar, { global: { plugins: [router] } });
+
     expect(wrapper.findAll('a')).toHaveLength(navItems.length);
-    navItems.forEach((item) => expect(wrapper.text()).toContain(item.label));
+    expect(wrapper.text()).toContain('Settings');
   });
 
   it('marks the link matching the current route as active', async () => {
@@ -96,11 +117,11 @@ describe('AppShell', () => {
     await router.isReady();
 
     const wrapper = mount(AppShell, { global: { plugins: [router] } });
-    const teamLink = wrapper.findAll('a').find((a) => a.text().includes('Team & Users'));
-    await teamLink?.trigger('click');
+    const helpLink = wrapper.findAll('a').find((a) => a.text().includes('Help'));
+    await helpLink?.trigger('click');
     await flushPromises();
 
-    expect(wrapper.text()).toContain('team');
-    expect(wrapper.find('h1').text()).toBe('Team & Users');
+    expect(wrapper.text()).toContain('help');
+    expect(wrapper.find('h1').text()).toBe('Help');
   });
 });

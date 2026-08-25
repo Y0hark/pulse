@@ -34,6 +34,12 @@ const REPORT_LINKS: ReportLink[] = [
     description: 'Browse frozen periods and reopen any past team snapshot.',
     to: '/reports/history',
   },
+  {
+    icon: '🎤',
+    title: 'Team walkthrough',
+    description: "Present the team's reports one by one, in a full-screen walkthrough view.",
+    to: '/reports/walkthrough',
+  },
 ];
 </script>
 

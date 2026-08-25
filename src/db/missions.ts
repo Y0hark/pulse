@@ -37,6 +37,7 @@ export interface MissionMember {
   email: string;
   displayName: string | null;
   role: 'member' | 'manager' | 'admin';
+  profile: { code: string; label: string } | null;
 }
 
 export interface MissionRecentReport {
@@ -136,9 +137,10 @@ export async function getMissionDetail(db: Queryable, slug: string, currentPerio
   if (!mission) return null;
 
   const membersResult = await db.query(
-    `SELECT u.id, u.email, u.display_name, tm.role
+    `SELECT u.id, u.email, u.display_name, tm.role, p.code AS profile_code, p.label AS profile_label
      FROM team_members tm
      JOIN users u ON u.id = tm.user_id
+     LEFT JOIN profiles p ON p.id = u.profile_id
      WHERE tm.team_id = $1
      ORDER BY u.display_name, u.email`,
     [mission.id],
@@ -148,6 +150,7 @@ export async function getMissionDetail(db: Queryable, slug: string, currentPerio
     email: r.email,
     displayName: r.display_name,
     role: r.role,
+    profile: r.profile_code ? { code: r.profile_code, label: r.profile_label } : null,
   }));
 
   const recentResult = await db.query(
@@ -266,7 +269,7 @@ export async function addMissionMember(db: Queryable, teamId: string, email: str
     `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT (team_id, user_id) DO NOTHING`,
     [teamId, user.id],
   );
-  return { userId: user.id, email: user.email, displayName: user.displayName, role: 'member' };
+  return { userId: user.id, email: user.email, displayName: user.displayName, role: 'member', profile: user.profile };
 }
 
 export async function removeMissionMember(db: Queryable, teamId: string, userId: string): Promise<void> {

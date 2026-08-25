@@ -243,8 +243,14 @@ watch(() => session.currentTeamSlug, load);
 }
 .snapshot__alerts li {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+.snapshot__alerts li,
+.snapshot__opportunities li {
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 .snapshot__not-frozen {
   display: flex;

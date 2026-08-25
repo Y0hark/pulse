@@ -71,6 +71,34 @@ export async function upsertUserByEmail(
   };
 }
 
+/** Login-time lookup: finds an existing, active user by email without creating one.
+ * Used to gate magic-link sign-in on admin-managed registration (see resolveLoginUser). */
+export async function findActiveUserByEmail(db: Queryable, email: string): Promise<UserRecord | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const result = await db.query(
+    `SELECT id, email, display_name, is_global_admin FROM users WHERE email = $1 AND is_active = true`,
+    [normalizedEmail],
+  );
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  return { id: row.id, email: row.email, displayName: row.display_name, profile: null, isGlobalAdmin: row.is_global_admin };
+}
+
+/** Gates magic-link sign-in: only the bootstrap admin can self-provision (so a fresh deploy
+ * always has one usable account); everyone else must already have a `users` row created by an
+ * admin (Settings > Users, or a mission member invite). Returns null when sign-in should be
+ * refused — callers must not create a session or send a link in that case. */
+export async function resolveLoginUser(
+  db: Queryable,
+  email: string,
+  bootstrapAdminEmail?: string,
+): Promise<UserRecord | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const isBootstrapAdmin = !!bootstrapAdminEmail && normalizedEmail === bootstrapAdminEmail.toLowerCase();
+  if (isBootstrapAdmin) return upsertUserByEmail(db, normalizedEmail, bootstrapAdminEmail);
+  return findActiveUserByEmail(db, normalizedEmail);
+}
+
 export async function updateDisplayName(db: Queryable, userId: string, displayName: string): Promise<void> {
   await db.query(`UPDATE users SET display_name = $1 WHERE id = $2`, [displayName, userId]);
 }
@@ -78,11 +106,22 @@ export async function updateDisplayName(db: Queryable, userId: string, displayNa
 export async function getUserById(
   db: Queryable,
   userId: string,
-): Promise<{ id: string; email: string; displayName: string | null } | null> {
-  const result = await db.query(`SELECT id, email, display_name FROM users WHERE id = $1`, [userId]);
+): Promise<{ id: string; email: string; displayName: string | null; profile: { code: string; label: string } | null } | null> {
+  const result = await db.query(
+    `SELECT u.id, u.email, u.display_name, p.code AS profile_code, p.label AS profile_label
+     FROM users u
+     LEFT JOIN profiles p ON p.id = u.profile_id
+     WHERE u.id = $1`,
+    [userId],
+  );
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
-  return { id: row.id, email: row.email, displayName: row.display_name };
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name,
+    profile: row.profile_code ? { code: row.profile_code, label: row.profile_label } : null,
+  };
 }
 
 export async function getUserWithTeams(db: Queryable, userId: string): Promise<UserWithTeams | null> {
@@ -184,6 +223,19 @@ export async function setUserActive(db: Queryable, userId: string, isActive: boo
 
 export async function setUserGlobalAdmin(db: Queryable, userId: string, isGlobalAdmin: boolean): Promise<void> {
   await db.query(`UPDATE users SET is_global_admin = $2 WHERE id = $1`, [userId, isGlobalAdmin]);
+}
+
+export interface ProfileOption {
+  id: number;
+  code: string;
+  label: string;
+}
+
+/** The Job/profile picker's options — real DB ids (not the app-level PROFILE_DEFS constant,
+ * which has no ids), since profile_id is a genuine FK on users. */
+export async function listProfiles(db: Queryable): Promise<ProfileOption[]> {
+  const result = await db.query(`SELECT id, code, label FROM profiles ORDER BY sort_order, label`, []);
+  return result.rows.map((row: any) => ({ id: row.id, code: row.code, label: row.label }));
 }
 
 export async function countGlobalAdmins(db: Queryable): Promise<number> {

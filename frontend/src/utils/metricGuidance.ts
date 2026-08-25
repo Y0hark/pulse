@@ -1,27 +1,3 @@
-export const PROFILE_DEFS: { code: string; label: string }[] = [
-  { code: 'ba', label: 'BA' },
-  { code: 'po', label: 'PO' },
-  { code: 'pm', label: 'PM' },
-  { code: 'scrum_master', label: 'Scrum Master' },
-  { code: 'pmo', label: 'PMO' },
-  { code: 'manager', label: 'Manager' },
-  { code: 'consultant', label: 'Consultant' },
-  { code: 'other', label: 'Other' },
-];
-
-export function profileLabelFor(code: string | null): string | null {
-  if (!code) return null;
-  return PROFILE_DEFS.find((p) => p.code === code)?.label ?? code;
-}
-
-/** Sort key for "grouped by profile": known profiles in PROFILE_DEFS order, then
- * anything unrecognized/unassigned last. */
-export function profileSortIndex(code: string | null): number {
-  if (!code) return PROFILE_DEFS.length;
-  const idx = PROFILE_DEFS.findIndex((p) => p.code === code);
-  return idx === -1 ? PROFILE_DEFS.length : idx;
-}
-
 export interface MetricGuidance {
   deliveredLabel: string;
   inflightLabel: string;
@@ -35,11 +11,10 @@ const DEFAULT_METRIC_GUIDANCE: MetricGuidance = {
 };
 
 /**
- * "Delivered" and "in-flight" mean something different depending on the role: a BA counts
- * tickets, a PO counts tickets and epics, a Scrum Master counts ceremonies and sprints, a PMO
- * counts projects. The counter fields stay generic numbers on the report (no schema change),
- * but every place that shows them should use this so the number carries real meaning instead
- * of being "just a number" — that's the whole point of tying it to the reporter's job profile.
+ * Mirrors src/dashboard/profiles.ts metricGuidanceFor on the backend: "delivered" and
+ * "in-flight" mean something different per job profile (a BA counts tickets, a PO counts
+ * tickets and epics, a Scrum Master counts ceremonies and sprints, a PMO counts projects) —
+ * this keeps the number tied to what it actually represents instead of being a raw count.
  */
 const METRIC_GUIDANCE: Record<string, MetricGuidance> = {
   ba: {
@@ -76,10 +51,7 @@ const METRIC_GUIDANCE: Record<string, MetricGuidance> = {
   other: DEFAULT_METRIC_GUIDANCE,
 };
 
-/** The point of this table: the same delivered/in-flight numbers mean something different for
- * a BA, a PO, a Scrum Master, or a PMO — this lets the app show/count them as they really are,
- * per the reporter's job profile, instead of an undifferentiated raw count. */
-export function metricGuidanceFor(code: string | null): MetricGuidance {
+export function metricGuidanceFor(code: string | null | undefined): MetricGuidance {
   if (!code) return DEFAULT_METRIC_GUIDANCE;
   return METRIC_GUIDANCE[code] ?? DEFAULT_METRIC_GUIDANCE;
 }

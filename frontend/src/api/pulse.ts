@@ -50,6 +50,7 @@ export interface CurrentPeriodResponse {
   period: ReportPeriod;
   status: PeriodStatus;
   draft: ReportDraft | ReportRecord;
+  deadline: string | null;
 }
 
 class ApiError extends Error {
@@ -122,6 +123,7 @@ export function submitMyReport(
 export interface ReportOwner {
   id: string;
   displayName: string;
+  profile: { code: string; label: string } | null;
 }
 
 export interface ReportViewResponse {
@@ -373,6 +375,7 @@ export interface MissionMember {
   email: string;
   displayName: string | null;
   role: 'member' | 'manager' | 'admin';
+  profile: { code: string; label: string } | null;
 }
 
 export interface MissionRecentReport {
@@ -486,6 +489,26 @@ export interface UserUpdateInput {
 
 export function getUsers(): Promise<{ users: UserAdminSummary[] }> {
   return request('/users');
+}
+
+export interface ProfileOption {
+  id: number;
+  code: string;
+  label: string;
+}
+
+export function getProfiles(): Promise<{ profiles: ProfileOption[] }> {
+  return request('/profiles');
+}
+
+export interface BulkCreateUsersInput {
+  emails: string[];
+  missionSlug?: string | null;
+  role?: 'member' | 'manager' | 'admin';
+}
+
+export function bulkCreateUsers(input: BulkCreateUsersInput): Promise<{ created: string[]; skipped: string[] }> {
+  return request('/users/bulk', { method: 'POST', body: JSON.stringify(input) });
 }
 
 export function createUser(input: UserCreateInput): Promise<{ user: UserRecordSummary }> {

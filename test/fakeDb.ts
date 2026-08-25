@@ -255,6 +255,27 @@ export class FakeDb implements Queryable {
       return { rows: [row] };
     }
 
+    if (sql.startsWith('SELECT id, email, display_name, is_global_admin FROM users WHERE email = $1 AND is_active = true')) {
+      const [email] = params as [string];
+      const row = this.users.find((u) => u.email === email && u.is_active);
+      return { rows: row ? [row] : [] };
+    }
+
+    if (sql.startsWith('SELECT id, code, label FROM profiles')) {
+      return {
+        rows: [
+          { id: 1, code: 'ba', label: 'BA' },
+          { id: 2, code: 'po', label: 'PO' },
+          { id: 3, code: 'pm', label: 'PM' },
+          { id: 4, code: 'scrum_master', label: 'Scrum Master' },
+          { id: 5, code: 'pmo', label: 'PMO' },
+          { id: 6, code: 'manager', label: 'Manager' },
+          { id: 7, code: 'consultant', label: 'Consultant' },
+          { id: 8, code: 'other', label: 'Other' },
+        ],
+      };
+    }
+
     if (sql.startsWith('SELECT is_active FROM users WHERE id = $1')) {
       const [userId] = params as [string];
       const row = this.users.find((u) => u.id === userId);
@@ -327,11 +348,21 @@ export class FakeDb implements Queryable {
       return { rows: [{ ...row, profile_code: null, profile_label: null }] };
     }
 
-    if (sql.startsWith('SELECT id, email, display_name FROM users WHERE id = $1')) {
+    if (sql.startsWith('SELECT u.id, u.email, u.display_name, p.code AS profile_code, p.label AS profile_label')) {
       const [userId] = params as [string];
       const row = this.users.find((u) => u.id === userId);
       if (!row) return { rows: [] };
-      return { rows: [{ id: row.id, email: row.email, display_name: row.display_name }] };
+      return {
+        rows: [
+          {
+            id: row.id,
+            email: row.email,
+            display_name: row.display_name,
+            profile_code: row.profile_code,
+            profile_label: row.profile_code,
+          },
+        ],
+      };
     }
 
     if (sql.startsWith('SELECT t.id, t.name, t.slug, tm.role')) {
@@ -580,7 +611,14 @@ export class FakeDb implements Queryable {
         .map((m) => {
           const user = this.users.find((u) => u.id === m.user_id);
           if (!user) return null;
-          return { id: user.id, email: user.email, display_name: user.display_name, role: m.role };
+          return {
+            id: user.id,
+            email: user.email,
+            display_name: user.display_name,
+            role: m.role,
+            profile_code: user.profile_code,
+            profile_label: user.profile_code,
+          };
         })
         .filter((r): r is NonNullable<typeof r> => r !== null)
         .sort((a, b) => (a.display_name ?? a.email).localeCompare(b.display_name ?? b.email));

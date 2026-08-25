@@ -74,7 +74,7 @@ watch(() => session.currentTeamSlug, load);
         </router-link>
       </header>
 
-      <ReportRenderer :report="data.report" />
+      <ReportRenderer :report="data.report" :profile-code="data.owner?.profile?.code" />
     </template>
   </main>
 </template>

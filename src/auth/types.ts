@@ -6,7 +6,7 @@ export interface Session {
 
 export type VerifyResult =
   | { ok: true; userId: string }
-  | { ok: false; reason: 'invalid_token' | 'expired' | 'already_used' | 'domain_not_allowed' };
+  | { ok: false; reason: 'invalid_token' | 'expired' | 'already_used' | 'domain_not_allowed' | 'not_registered' };
 
 /**
  * Swappable identity backend. Magic-link is the v1 implementation; a future

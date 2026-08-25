@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProfileBreakdownEntry } from '../../api/pulse';
+import { metricGuidanceFor } from '../../utils/metricGuidance';
 
 defineProps<{
   entries: ProfileBreakdownEntry[];
@@ -22,7 +23,10 @@ defineProps<{
           <td>{{ entry.label }}</td>
           <td>{{ entry.headcount }}</td>
           <td>{{ entry.headcount ? entry.meanWorkload : '—' }}</td>
-          <td>{{ entry.delivered }}</td>
+          <td>
+            {{ entry.delivered }}
+            <span class="profile-breakdown__hint">{{ metricGuidanceFor(entry.code).deliveredLabel }}</span>
+          </td>
         </tr>
         <tr v-if="!entries.length">
           <td colspan="4" class="profile-breakdown__empty">No profile data yet.</td>
@@ -53,6 +57,11 @@ defineProps<{
   padding: var(--space-2) var(--space-2);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
+}
+.profile-breakdown__hint {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 .profile-breakdown__empty {
   text-align: center;

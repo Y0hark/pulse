@@ -69,7 +69,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown));
           <PulseSkeleton variant="block" height="8rem" />
         </div>
         <p v-else-if="!report" class="presenter__placeholder">No report yet.</p>
-        <ReportRenderer v-else :report="report" />
+        <ReportRenderer v-else :report="report" :profile-code="entries[currentIndex]?.profile.code" />
       </div>
 
       <footer class="presenter__nav">
@@ -188,5 +188,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown));
   justify-content: space-between;
   padding-top: var(--space-6);
   max-width: 720px;
+}
+
+.presenter__header h1 {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .presenter {
+    flex-direction: column;
+  }
+  .presenter__sidebar {
+    width: 100%;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .presenter__stage {
+    padding: var(--space-4);
+  }
 }
 </style>

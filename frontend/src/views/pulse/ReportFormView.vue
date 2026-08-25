@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useReportStore } from '../../stores/report';
 import { useSessionStore } from '../../stores/session';
 import WorkloadSlider from '../../components/pulse/WorkloadSlider.vue';
@@ -9,6 +9,7 @@ import StreakBadge from '../../components/pulse/StreakBadge.vue';
 import CompletionRing from '../../components/pulse/CompletionRing.vue';
 import { PulseButton, PulseEmptyState, PulseErrorState, PulseSkeleton } from '../../components/ui';
 import type { AlertDraft, AlertSeverity, OpportunityDraft, OpportunityType, ProjectCardDraft } from '../../api/pulse';
+import { metricGuidanceFor } from '../../utils/metricGuidance';
 
 const OPPORTUNITY_TYPES: { value: OpportunityType; label: string }[] = [
   { value: 'open_position', label: 'Open position' },
@@ -50,6 +51,19 @@ function newAlert(): AlertDraft {
 function newOpportunity(): OpportunityDraft {
   return { type: 'new_project', content: '' };
 }
+
+const metricGuidance = computed(() => metricGuidanceFor(session.user?.profile?.code));
+
+const deadlineLabel = computed(() => {
+  if (!store.deadline) return null;
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(store.deadline));
+});
 </script>
 
 <template>
@@ -87,9 +101,12 @@ function newOpportunity(): OpportunityDraft {
     <p v-if="store.isFrozen" class="report-form__frozen-banner">
       This period is frozen — changes can no longer be saved.
     </p>
+    <p v-else-if="deadlineLabel" class="report-form__deadline-banner">
+      Editable until <strong>{{ deadlineLabel }}</strong> — after that this period is frozen automatically.
+    </p>
     <p v-if="store.justSubmitted" class="report-form__success-banner">
       ✓ Submitted{{ store.lastSavedAt ? ` at ${new Date(store.lastSavedAt).toLocaleString()}` : '' }} — you can keep
-      editing until the period is frozen.
+      editing until the deadline above.
     </p>
     <p v-if="store.error" class="report-form__error">{{ store.error }}</p>
 
@@ -103,14 +120,17 @@ function newOpportunity(): OpportunityDraft {
     </section>
 
     <section class="report-form__counters">
-      <label>
-        Delivered
-        <input type="number" min="0" v-model.number="store.draft.deliveredCnt" :disabled="store.isFrozen" @change="onFieldChange" />
-      </label>
-      <label>
-        In-flight
-        <input type="number" min="0" v-model.number="store.draft.inflightCnt" :disabled="store.isFrozen" @change="onFieldChange" />
-      </label>
+      <p class="report-form__counters-hint">{{ metricGuidance.description }}</p>
+      <div class="report-form__counters-row">
+        <label>
+          {{ metricGuidance.deliveredLabel }}
+          <input type="number" min="0" v-model.number="store.draft.deliveredCnt" :disabled="store.isFrozen" @change="onFieldChange" />
+        </label>
+        <label>
+          {{ metricGuidance.inflightLabel }}
+          <input type="number" min="0" v-model.number="store.draft.inflightCnt" :disabled="store.isFrozen" @change="onFieldChange" />
+        </label>
+      </div>
     </section>
 
     <section>
@@ -279,6 +299,16 @@ function newOpportunity(): OpportunityDraft {
 }
 .report-form__counters {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.report-form__counters-hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+.report-form__counters-row {
+  display: flex;
   gap: var(--space-4);
   flex-wrap: wrap;
 }
@@ -304,6 +334,12 @@ function newOpportunity(): OpportunityDraft {
 .report-form__frozen-banner {
   background: var(--color-danger-soft);
   color: var(--color-danger);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+.report-form__deadline-banner {
+  background: var(--color-surface-alt);
+  color: var(--color-text-secondary);
   padding: var(--space-3);
   border-radius: var(--radius-sm);
 }

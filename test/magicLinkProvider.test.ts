@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config/pulse.js';
 import { MagicLinkAuthProvider } from '../src/auth/magicLinkProvider.js';
@@ -26,8 +27,9 @@ function tokenFromLink(link: string): string {
 }
 
 describe('MagicLinkAuthProvider', () => {
-  it('issues a token, verifies it, and auto-provisions the user', async () => {
-    const { provider, mailer } = buildProvider();
+  it('issues a token and verifies it for an admin-registered user', async () => {
+    const { provider, mailer, db } = buildProvider();
+    db.seedUser(randomUUID(), 'someone@example.com');
 
     await provider.issueChallenge('Someone@Example.com');
     expect(mailer.sent).toHaveLength(1);
@@ -41,8 +43,29 @@ describe('MagicLinkAuthProvider', () => {
     }
   });
 
+  it('auto-provisions only the configured bootstrap admin email', async () => {
+    const { provider, mailer } = buildProvider({ bootstrapAdminEmail: 'admin@example.com' });
+
+    await provider.issueChallenge('admin@example.com');
+    expect(mailer.sent).toHaveLength(1);
+
+    const token = tokenFromLink(mailer.sent[0].link);
+    const result = await provider.verify(token);
+    expect(result.ok).toBe(true);
+  });
+
+  it('never sends a link or creates an account for an unregistered email', async () => {
+    const { provider, mailer, db } = buildProvider();
+
+    await provider.issueChallenge('nobody@example.com');
+
+    expect(mailer.sent).toHaveLength(0);
+    expect(db.users).toHaveLength(0);
+  });
+
   it('rejects a token that has already been used', async () => {
-    const { provider, mailer } = buildProvider();
+    const { provider, mailer, db } = buildProvider();
+    db.seedUser(randomUUID(), 'a@example.com');
     await provider.issueChallenge('a@example.com');
     const token = tokenFromLink(mailer.sent[0].link);
 
@@ -54,7 +77,8 @@ describe('MagicLinkAuthProvider', () => {
   });
 
   it('rejects an expired token', async () => {
-    const { provider, mailer } = buildProvider({ magicLinkTtlMinutes: -1 });
+    const { provider, mailer, db } = buildProvider({ magicLinkTtlMinutes: -1 });
+    db.seedUser(randomUUID(), 'a@example.com');
     await provider.issueChallenge('a@example.com');
     const token = tokenFromLink(mailer.sent[0].link);
 
@@ -69,7 +93,9 @@ describe('MagicLinkAuthProvider', () => {
   });
 
   it('enforces the domain allowlist by silently skipping disallowed domains', async () => {
-    const { provider, mailer } = buildProvider({ allowedDomains: ['ceva-logistics.com'] });
+    const { provider, mailer, db } = buildProvider({ allowedDomains: ['ceva-logistics.com'] });
+    db.seedUser(randomUUID(), 'someone@other.com');
+    db.seedUser(randomUUID(), 'someone@ceva-logistics.com');
 
     await provider.issueChallenge('someone@other.com');
     expect(mailer.sent).toHaveLength(0);
@@ -80,6 +106,7 @@ describe('MagicLinkAuthProvider', () => {
 
   it('rejects a deactivated user\'s session on the very next getSession call', async () => {
     const { provider, mailer, db } = buildProvider();
+    db.seedUser(randomUUID(), 'a@example.com');
     await provider.issueChallenge('a@example.com');
     const token = tokenFromLink(mailer.sent[0].link);
     const result = await provider.verify(token);

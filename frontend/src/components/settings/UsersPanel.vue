@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import * as api from '../../api/pulse';
-import type { MissionSummary, UserAdminSummary } from '../../api/pulse';
+import type { MissionSummary, ProfileOption, UserAdminSummary } from '../../api/pulse';
 import { useToast } from '../../composables/useToast';
 import {
   PulseBadge,
@@ -13,23 +13,38 @@ import {
   PulseSelect,
   PulseSkeleton,
   PulseTable,
+  PulseTextarea,
 } from '../ui';
 
 const toast = useToast();
 
 const users = ref<UserAdminSummary[] | null>(null);
 const missions = ref<MissionSummary[] | null>(null);
+const profiles = ref<ProfileOption[] | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+const profileOptions = computed(
+  () => profiles.value?.map((p) => ({ value: String(p.id), label: p.label })) ?? [],
+);
 
 const createOpen = ref(false);
 const createEmail = ref('');
 const createDisplayName = ref('');
+const createProfileId = ref('');
 const createError = ref<string | null>(null);
 const createSubmitting = ref(false);
 
+const bulkOpen = ref(false);
+const bulkEmails = ref('');
+const bulkMissionSlug = ref('');
+const bulkRole = ref<'member' | 'manager' | 'admin'>('member');
+const bulkError = ref<string | null>(null);
+const bulkSubmitting = ref(false);
+
 const manageUser = ref<UserAdminSummary | null>(null);
 const manageDisplayName = ref('');
+const manageProfileId = ref('');
 const manageBusy = ref(false);
 const addMissionSlug = ref('');
 const addMissionRole = ref<'member' | 'manager' | 'admin'>('member');
@@ -43,6 +58,7 @@ const roleLabels: Record<'member' | 'manager' | 'admin', string> = {
 const columns = [
   { key: 'name', label: 'Name' },
   { key: 'email', label: 'Email' },
+  { key: 'job', label: 'Job' },
   { key: 'status', label: 'Status' },
   { key: 'missions', label: 'Missions' },
   { key: 'actions', label: '', align: 'right' as const },
@@ -72,9 +88,14 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = null;
   try {
-    const [usersRes, missionsRes] = await Promise.all([api.getUsers(), api.getMissions()]);
+    const [usersRes, missionsRes, profilesRes] = await Promise.all([
+      api.getUsers(),
+      api.getMissions(),
+      api.getProfiles(),
+    ]);
     users.value = usersRes.users;
     missions.value = missionsRes.missions;
+    profiles.value = profilesRes.profiles;
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load users.';
   } finally {
@@ -85,6 +106,7 @@ async function load(): Promise<void> {
 function openCreate(): void {
   createEmail.value = '';
   createDisplayName.value = '';
+  createProfileId.value = '';
   createError.value = null;
   createOpen.value = true;
 }
@@ -94,7 +116,11 @@ async function submitCreate(): Promise<void> {
   createSubmitting.value = true;
   createError.value = null;
   try {
-    await api.createUser({ email: createEmail.value.trim(), displayName: createDisplayName.value.trim() || null });
+    await api.createUser({
+      email: createEmail.value.trim(),
+      displayName: createDisplayName.value.trim() || null,
+      profileId: createProfileId.value ? Number(createProfileId.value) : null,
+    });
     createOpen.value = false;
     toast.success('User created.');
     await load();
@@ -108,9 +134,45 @@ async function submitCreate(): Promise<void> {
   }
 }
 
+function openBulk(): void {
+  bulkEmails.value = '';
+  bulkMissionSlug.value = '';
+  bulkRole.value = 'member';
+  bulkError.value = null;
+  bulkOpen.value = true;
+}
+
+async function submitBulk(): Promise<void> {
+  const emails = bulkEmails.value
+    .split('\n')
+    .map((e) => e.trim())
+    .filter((e) => e !== '');
+  if (emails.length === 0) return;
+
+  bulkSubmitting.value = true;
+  bulkError.value = null;
+  try {
+    const res = await api.bulkCreateUsers({
+      emails,
+      missionSlug: bulkMissionSlug.value || null,
+      role: bulkRole.value,
+    });
+    bulkOpen.value = false;
+    const parts = [`${res.created.length} created`];
+    if (res.skipped.length) parts.push(`${res.skipped.length} already existed`);
+    toast.success(parts.join(', ') + '.');
+    await load();
+  } catch {
+    bulkError.value = 'Could not add these users.';
+  } finally {
+    bulkSubmitting.value = false;
+  }
+}
+
 function openManage(user: UserAdminSummary): void {
   manageUser.value = user;
   manageDisplayName.value = user.displayName ?? '';
+  manageProfileId.value = user.profile ? String(profiles.value?.find((p) => p.code === user.profile?.code)?.id ?? '') : '';
   addMissionSlug.value = '';
   addMissionRole.value = 'member';
 }
@@ -119,11 +181,14 @@ function closeManage(): void {
   manageUser.value = null;
 }
 
-async function saveDisplayName(): Promise<void> {
+async function saveProfile(): Promise<void> {
   if (!manageUser.value) return;
   manageBusy.value = true;
   try {
-    await api.updateUser(manageUser.value.id, { displayName: manageDisplayName.value.trim() || null });
+    await api.updateUser(manageUser.value.id, {
+      displayName: manageDisplayName.value.trim() || null,
+      profileId: manageProfileId.value ? Number(manageProfileId.value) : null,
+    });
     toast.success('User updated.');
     await load();
     manageUser.value = users.value?.find((u) => u.id === manageUser.value?.id) ?? null;
@@ -234,7 +299,10 @@ onMounted(load);
   <section class="users-panel">
     <header class="users-panel__header">
       <p class="users-panel__subtitle">Create, edit, and manage access for every user in the organization.</p>
-      <PulseButton @click="openCreate">New user</PulseButton>
+      <div class="users-panel__header-actions">
+        <PulseButton variant="secondary" @click="openBulk">Bulk add</PulseButton>
+        <PulseButton @click="openCreate">New user</PulseButton>
+      </div>
     </header>
 
     <div v-if="loading" class="users-panel__skeleton">
@@ -250,6 +318,10 @@ onMounted(load);
     </PulseEmptyState>
 
     <PulseTable v-else :columns="columns" :rows="rows">
+      <template #cell-job="{ row }">
+        <span v-if="!userOf(row).profile" class="users-panel__muted">—</span>
+        <span v-else>{{ userOf(row).profile!.label }}</span>
+      </template>
       <template #cell-status="{ row }">
         <PulseBadge :variant="userOf(row).isActive ? 'success' : 'neutral'">
           {{ userOf(row).isActive ? 'Active' : 'Deactivated' }}
@@ -269,6 +341,12 @@ onMounted(load);
       <form class="users-panel__form" @submit.prevent="submitCreate">
         <PulseInput v-model="createEmail" label="Email" placeholder="teammate@company.com" type="email" />
         <PulseInput v-model="createDisplayName" label="Name (optional)" placeholder="Jane Doe" />
+        <PulseSelect
+          v-model="createProfileId"
+          label="Job (optional)"
+          placeholder="No job set"
+          :options="profileOptions"
+        />
         <p v-if="createError" class="users-panel__error">{{ createError }}</p>
       </form>
       <template #footer>
@@ -277,12 +355,46 @@ onMounted(load);
       </template>
     </PulseModal>
 
+    <PulseModal v-model="bulkOpen" title="Bulk add users">
+      <form class="users-panel__form" @submit.prevent="submitBulk">
+        <PulseTextarea
+          v-model="bulkEmails"
+          label="Emails"
+          placeholder="jane@company.com&#10;john@company.com"
+          hint="One email per line."
+          :rows="6"
+        />
+        <PulseSelect
+          v-model="bulkMissionSlug"
+          label="Add to mission (optional)"
+          placeholder="No mission"
+          :options="missions?.map((m) => ({ value: m.slug, label: m.name })) ?? []"
+        />
+        <PulseSelect
+          v-if="bulkMissionSlug"
+          v-model="bulkRole"
+          label="Role on that mission"
+          :options="[
+            { value: 'member', label: 'Contributeur' },
+            { value: 'manager', label: 'Manager' },
+            { value: 'admin', label: 'Admin' },
+          ]"
+        />
+        <p v-if="bulkError" class="users-panel__error">{{ bulkError }}</p>
+      </form>
+      <template #footer>
+        <PulseButton variant="secondary" @click="bulkOpen = false">Cancel</PulseButton>
+        <PulseButton :loading="bulkSubmitting" :disabled="bulkSubmitting" @click="submitBulk">Add users</PulseButton>
+      </template>
+    </PulseModal>
+
     <PulseModal :model-value="manageUser !== null" :title="manageUser?.displayName ?? manageUser?.email" @update:model-value="closeManage">
       <div v-if="manageUser" class="users-panel__manage">
         <section class="users-panel__section">
           <h4>Profile</h4>
           <PulseInput v-model="manageDisplayName" label="Display name" />
-          <PulseButton size="sm" variant="secondary" :disabled="manageBusy" @click="saveDisplayName">Save name</PulseButton>
+          <PulseSelect v-model="manageProfileId" label="Job" placeholder="No job set" :options="profileOptions" />
+          <PulseButton size="sm" variant="secondary" :disabled="manageBusy" @click="saveProfile">Save</PulseButton>
         </section>
 
         <section class="users-panel__section">
@@ -369,6 +481,12 @@ onMounted(load);
 .users-panel__subtitle {
   margin: 0;
   color: var(--color-text-secondary);
+}
+
+.users-panel__header-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .users-panel__skeleton {

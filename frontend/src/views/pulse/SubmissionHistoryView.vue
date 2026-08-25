@@ -125,7 +125,7 @@ const hasPeriods = computed(() => (periods.value?.length ?? 0) > 0);
           </p>
           <PulseSkeleton v-else-if="expandLoading" variant="block" height="6rem" />
           <PulseErrorState v-else-if="expandError" :description="expandError" />
-          <ReportRenderer v-else-if="expandedReport" :report="expandedReport" />
+          <ReportRenderer v-else-if="expandedReport" :report="expandedReport" :profile-code="session.user?.profile?.code" />
         </div>
       </PulseCard>
     </div>
