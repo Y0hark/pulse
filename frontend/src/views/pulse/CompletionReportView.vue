@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import * as api from '../../api/pulse';
 import type { CompletionReport, CompletionStatus, ReportPeriod } from '../../api/pulse';
 import ReportHeader from '../../components/pulse/ReportHeader.vue';
 import ExecutiveSummary from '../../components/pulse/ExecutiveSummary.vue';
 import { PulseBadge, PulseButton, PulseCard, PulseErrorState, PulseSkeleton, PulseStatCard, PulseTable } from '../../components/ui';
 import { useReportActions } from '../../composables/useReportActions';
+import { useSessionStore } from '../../stores/session';
 import { summarizeCompletion } from '../../utils/reportSummary';
 
-const TEAM = 'ceva-logistics';
+const session = useSessionStore();
 
 const STATUS_LABEL: Record<CompletionStatus, string> = { on_time: 'On time', late: 'Late', missing: 'Missing' };
 const STATUS_VARIANT: Record<CompletionStatus, 'success' | 'warning' | 'danger'> = {
@@ -46,11 +47,12 @@ const rows = computed(
 );
 
 async function load(): Promise<void> {
+  if (!session.currentTeamSlug) return;
   loading.value = true;
   error.value = null;
   generatedAt.value = new Date().toISOString();
   try {
-    const res = await api.getCompletionReport(TEAM);
+    const res = await api.getCompletionReport(session.currentTeamSlug);
     period.value = res.period;
     completion.value = res.completion;
   } catch (err) {
@@ -60,7 +62,12 @@ async function load(): Promise<void> {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  if (session.loaded) void load();
+  else void session.load();
+});
+
+watch(() => session.currentTeamSlug, load);
 </script>
 
 <template>
@@ -85,7 +92,7 @@ onMounted(load);
             variant="secondary"
             size="sm"
             :loading="exportingPdf"
-            @click="exportPdf(`/teams/${TEAM}/reports/completion/export.pdf?period=${period.isoWeek}`)"
+            @click="exportPdf(`/teams/${session.currentTeamSlug}/reports/completion/export.pdf?period=${period.isoWeek}`)"
             >Export PDF</PulseButton
           >
         </template>

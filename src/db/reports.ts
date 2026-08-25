@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import type { Queryable } from './pool.js';
 import type {
   AlertSeverity,
@@ -9,6 +10,21 @@ import type {
   ReportWritePayload,
 } from '../reports/types.js';
 import type { DashboardAggregate, PeriodSnapshot } from '../dashboard/types.js';
+
+/** report_periods is a global ISO-week calendar (see migration 001) that nothing else
+ * populates — there's no seed and no admin UI for it. Called on server startup and on the
+ * same interval as the freeze scheduler (see src/server.ts) so the current week's row always
+ * exists; ON CONFLICT makes repeated calls across processes/restarts harmless. */
+export async function ensureCurrentPeriodExists(db: Queryable, now: Date = new Date()): Promise<void> {
+  const start = DateTime.fromJSDate(now).startOf('week');
+  const isoWeek = start.toFormat("kkkk-'W'WW");
+  await db.query(
+    `INSERT INTO report_periods (iso_week, starts_on, ends_on)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (iso_week) DO NOTHING`,
+    [isoWeek, start.toISODate(), start.plus({ days: 6 }).toISODate()],
+  );
+}
 
 export async function getCurrentPeriod(db: Queryable): Promise<ReportPeriod | null> {
   const result = await db.query(

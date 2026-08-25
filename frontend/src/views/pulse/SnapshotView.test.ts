@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import SnapshotView from './SnapshotView.vue';
 import { ApiError } from '../../api/pulse';
 
@@ -9,8 +10,18 @@ vi.mock('vue-router', () => ({
 
 vi.mock('../../api/pulse', async () => {
   const actual = await vi.importActual<typeof import('../../api/pulse')>('../../api/pulse');
-  return { ...actual, getPeriodSnapshot: vi.fn(), freezePeriod: vi.fn() };
+  return { ...actual, getMe: vi.fn(), getPeriodSnapshot: vi.fn(), freezePeriod: vi.fn() };
 });
+
+function mockMe() {
+  return {
+    id: 'user-1',
+    email: 'member@example.com',
+    profile: null,
+    isGlobalAdmin: false,
+    teams: [{ team: { id: 't1', name: 'CEVA Logistics', slug: 'ceva-logistics' }, role: 'member' }],
+  };
+}
 
 const aggregate = {
   workload: { mean: 42, max: 70, min: 10, distribution: [
@@ -26,8 +37,14 @@ const aggregate = {
 };
 
 describe('SnapshotView', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
+
   it('offers a manual freeze when the period is not yet frozen', async () => {
     const api = await import('../../api/pulse');
+    (api.getMe as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockMe());
     (api.getPeriodSnapshot as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new ApiError(404, { error: 'not_frozen' }));
 
     const wrapper = mount(SnapshotView);
@@ -39,6 +56,7 @@ describe('SnapshotView', () => {
 
   it('renders the frozen snapshot payload', async () => {
     const api = await import('../../api/pulse');
+    (api.getMe as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockMe());
     (api.getPeriodSnapshot as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       period: { id: 5, isoWeek: '2026-W29', startsOn: '2026-07-13', endsOn: '2026-07-20' },
       snapshot: { teamId: 'team-1', periodId: 5, payload: aggregate, frozenAt: '2026-07-21T09:30:00.000Z' },

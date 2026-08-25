@@ -5,8 +5,9 @@ import * as api from '../../api/pulse';
 import type { ReportViewResponse } from '../../api/pulse';
 import ReportRenderer from '../../components/pulse/ReportRenderer.vue';
 import { PulseBadge, PulseErrorState, PulseSkeleton } from '../../components/ui';
+import { useSessionStore } from '../../stores/session';
 
-const TEAM = 'ceva-logistics';
+const session = useSessionStore();
 
 const props = defineProps<{
   reportId: string;
@@ -19,10 +20,11 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 
 async function load(): Promise<void> {
+  if (!session.currentTeamSlug) return;
   loading.value = true;
   error.value = null;
   try {
-    data.value = await api.getReport(TEAM, props.reportId);
+    data.value = await api.getReport(session.currentTeamSlug, props.reportId);
   } catch (err) {
     data.value = null;
     error.value =
@@ -34,13 +36,17 @@ async function load(): Promise<void> {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  if (session.loaded) void load();
+  else void session.load();
+});
 watch(
   () => route.params.reportId,
   () => {
     void load();
   },
 );
+watch(() => session.currentTeamSlug, load);
 </script>
 
 <template>

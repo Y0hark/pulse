@@ -5,8 +5,9 @@ import * as api from '../../api/pulse';
 import type { ReportPeriod, ReportRecord, WalkthroughEntry } from '../../api/pulse';
 import PresenterMode from '../../components/pulse/PresenterMode.vue';
 import { PulseButton, PulseEmptyState, PulseErrorState, PulseSkeleton } from '../../components/ui';
+import { useSessionStore } from '../../stores/session';
 
-const TEAM = 'ceva-logistics';
+const session = useSessionStore();
 
 const route = useRoute();
 const router = useRouter();
@@ -26,11 +27,12 @@ const reportLoading = ref(false);
 const currentEntry = computed(() => entries.value[currentIndex.value] ?? null);
 
 async function loadEntries(): Promise<void> {
+  if (!session.currentTeamSlug) return;
   loading.value = true;
   error.value = null;
   try {
     const isoWeek = typeof route.query.period === 'string' ? route.query.period : undefined;
-    const res = await api.getTeamWalkthrough(TEAM, isoWeek);
+    const res = await api.getTeamWalkthrough(session.currentTeamSlug, isoWeek);
     period.value = res.period;
     entries.value = res.entries;
   } catch (err) {
@@ -54,7 +56,8 @@ async function loadCurrentReport(): Promise<void> {
   reportLoading.value = true;
   currentReport.value = null;
   try {
-    const res = await api.getReport(TEAM, entry.reportId);
+    if (!session.currentTeamSlug) return;
+    const res = await api.getReport(session.currentTeamSlug, entry.reportId);
     reportCache.set(entry.reportId, res.report);
     currentReport.value = res.report;
   } catch {
@@ -93,14 +96,21 @@ watch(currentIndex, () => {
   void loadCurrentReport();
 });
 
-onMounted(async () => {
+async function start(): Promise<void> {
   await loadEntries();
   const atUserId = typeof route.query.at === 'string' ? route.query.at : null;
   if (atUserId) {
     const index = entries.value.findIndex((e) => e.user.id === atUserId);
     openPresenter(index >= 0 ? index : 0);
   }
+}
+
+onMounted(async () => {
+  if (session.loaded) await start();
+  else void session.load();
 });
+
+watch(() => session.currentTeamSlug, start);
 </script>
 
 <template>

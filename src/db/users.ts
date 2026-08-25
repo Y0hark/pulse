@@ -46,7 +46,12 @@ export async function upsertUserByEmail(
   email: string,
   bootstrapAdminEmail?: string,
 ): Promise<UserRecord> {
-  const isBootstrapAdmin = !!bootstrapAdminEmail && email.toLowerCase() === bootstrapAdminEmail.toLowerCase();
+  // Normalize here (not just at the login callsite) so every caller — admin "add member"
+  // forms included — lands on the same row a user's magic-link login resolves to. Without
+  // this, an admin typing "Sam@x.com" while the user logs in as "sam@x.com" silently created
+  // two separate users rows, leaving the real account with no team_members row.
+  const normalizedEmail = email.trim().toLowerCase();
+  const isBootstrapAdmin = !!bootstrapAdminEmail && normalizedEmail === bootstrapAdminEmail.toLowerCase();
   const result = await db.query(
     `INSERT INTO users (email, is_global_admin)
      VALUES ($1, $2)
@@ -54,7 +59,7 @@ export async function upsertUserByEmail(
        SET email = EXCLUDED.email,
            is_global_admin = CASE WHEN $2 THEN true ELSE users.is_global_admin END
      RETURNING id, email, display_name, profile_id, is_global_admin`,
-    [email, isBootstrapAdmin],
+    [normalizedEmail, isBootstrapAdmin],
   );
   const row = result.rows[0];
   return {

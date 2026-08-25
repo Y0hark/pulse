@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import * as api from '../../api/pulse';
 import type { AlertSeverity, DashboardAggregate, ReportPeriod } from '../../api/pulse';
@@ -10,9 +10,10 @@ import ReportHeader from '../../components/pulse/ReportHeader.vue';
 import ExecutiveSummary from '../../components/pulse/ExecutiveSummary.vue';
 import { PulseBadge, PulseButton, PulseCard, PulseErrorState, PulseSkeleton, PulseStatCard } from '../../components/ui';
 import { useReportActions } from '../../composables/useReportActions';
+import { useSessionStore } from '../../stores/session';
 import { summarizeDashboard } from '../../utils/reportSummary';
 
-const TEAM = 'ceva-logistics';
+const session = useSessionStore();
 
 const SEVERITY_LABEL: Record<AlertSeverity, string> = { critical: '🔴 Critical', warn: '🟠 Warning', info: 'ℹ️ Info' };
 const SEVERITY_VARIANT: Record<AlertSeverity, 'danger' | 'warning' | 'accent'> = { critical: 'danger', warn: 'warning', info: 'accent' };
@@ -35,11 +36,12 @@ const pageEl = ref<HTMLElement | null>(null);
 const summaryPoints = computed(() => (aggregate.value ? summarizeDashboard(aggregate.value) : []));
 
 async function load(): Promise<void> {
+  if (!session.currentTeamSlug) return;
   loading.value = true;
   error.value = null;
   notFrozen.value = false;
   try {
-    const res = await api.getPeriodSnapshot(TEAM, periodId.value);
+    const res = await api.getPeriodSnapshot(session.currentTeamSlug, periodId.value);
     period.value = res.period;
     aggregate.value = res.snapshot.payload;
     frozenAt.value = res.snapshot.frozenAt;
@@ -55,10 +57,11 @@ async function load(): Promise<void> {
 }
 
 async function freezeNow(): Promise<void> {
+  if (!session.currentTeamSlug) return;
   freezing.value = true;
   error.value = null;
   try {
-    const res = await api.freezePeriod(TEAM, periodId.value);
+    const res = await api.freezePeriod(session.currentTeamSlug, periodId.value);
     period.value = res.period;
     aggregate.value = res.snapshot.payload;
     frozenAt.value = res.snapshot.frozenAt;
@@ -86,8 +89,11 @@ async function exportPng(): Promise<void> {
 }
 
 onMounted(() => {
-  void load();
+  if (session.loaded) void load();
+  else void session.load();
 });
+
+watch(() => session.currentTeamSlug, load);
 </script>
 
 <template>
@@ -120,7 +126,7 @@ onMounted(() => {
               variant="secondary"
               size="sm"
               :loading="exportingPdf"
-              @click="exportPdf(`/teams/${TEAM}/periods/${periodId}/snapshot/export.pdf`)"
+              @click="exportPdf(`/teams/${session.currentTeamSlug}/periods/${periodId}/snapshot/export.pdf`)"
               >Export PDF</PulseButton
             >
             <PulseButton variant="secondary" size="sm" :loading="exportingPng" @click="exportPng">Export PNG</PulseButton>

@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useDashboardStore } from '../../stores/dashboard';
+import { useSessionStore } from '../../stores/session';
 import StatGauge from '../../components/pulse/StatGauge.vue';
 import DistributionChart from '../../components/pulse/DistributionChart.vue';
 import ProfileBreakdown from '../../components/pulse/ProfileBreakdown.vue';
 import Leaderboard from '../../components/pulse/Leaderboard.vue';
 import ReportHeader from '../../components/pulse/ReportHeader.vue';
 import ExecutiveSummary from '../../components/pulse/ExecutiveSummary.vue';
-import { PulseBadge, PulseButton, PulseCard, PulseErrorState, PulseSkeleton, PulseStatCard, PulseTable } from '../../components/ui';
+import { PulseBadge, PulseButton, PulseCard, PulseEmptyState, PulseErrorState, PulseSkeleton, PulseStatCard, PulseTable } from '../../components/ui';
 import { useReportActions } from '../../composables/useReportActions';
 import { summarizeDashboard } from '../../utils/reportSummary';
 import * as api from '../../api/pulse';
 import type { AlertSeverity, LeaderboardEntry } from '../../api/pulse';
 
-const TEAM = 'ceva-logistics';
-
 const store = useDashboardStore();
+const session = useSessionStore();
 const { exportPdf, copyLink } = useReportActions();
 
 const SEVERITY_LABEL: Record<AlertSeverity, string> = { critical: '🔴 Critical', warn: '🟠 Warning', info: 'ℹ️ Info' };
@@ -50,10 +50,12 @@ const leaderboardOptIn = ref(false);
 const leaderboardError = ref<string | null>(null);
 
 async function loadLeaderboard(): Promise<void> {
+  const team = session.currentTeamSlug;
+  if (!team) return;
   try {
     const [{ entries }, { leaderboardOptIn: optedIn }] = await Promise.all([
-      api.getTeamLeaderboard(TEAM),
-      api.getMyGamification(TEAM),
+      api.getTeamLeaderboard(team),
+      api.getMyGamification(team),
     ]);
     leaderboardEntries.value = entries;
     leaderboardOptIn.value = optedIn;
@@ -64,27 +66,45 @@ async function loadLeaderboard(): Promise<void> {
 }
 
 async function onToggleOptIn(optIn: boolean): Promise<void> {
-  await api.setLeaderboardOptIn(TEAM, optIn);
+  if (!session.currentTeamSlug) return;
+  await api.setLeaderboardOptIn(session.currentTeamSlug, optIn);
   await loadLeaderboard();
 }
 
 function retry(): void {
   generatedAt.value = new Date().toISOString();
-  void store.load(TEAM);
+  if (session.currentTeamSlug) void store.load(session.currentTeamSlug);
+}
+
+function start(): void {
+  if (!session.currentTeamSlug) return;
+  store.startPolling(session.currentTeamSlug);
+  void loadLeaderboard();
 }
 
 onMounted(() => {
-  store.startPolling(TEAM);
-  void loadLeaderboard();
+  // Loading the session (when not already loaded) sets currentTeamSlug reactively, which the
+  // watch below picks up — calling start() here too would double-fetch the dashboard.
+  if (session.loaded) start();
+  else void session.load();
 });
 onUnmounted(() => {
   store.stopPolling();
 });
+
+watch(() => session.currentTeamSlug, start);
 </script>
 
 <template>
   <main class="team-dashboard">
-    <div v-if="store.loading && !aggregate" class="team-dashboard__skeleton">
+    <PulseEmptyState
+      v-if="session.loaded && !session.currentTeamSlug"
+      icon="🧭"
+      title="No mission assigned"
+      description="Ask an admin to add you to a mission to see its dashboard."
+    />
+
+    <div v-else-if="store.loading && !aggregate" class="team-dashboard__skeleton">
       <PulseSkeleton variant="block" height="4rem" />
       <PulseSkeleton variant="block" height="8rem" />
       <PulseSkeleton variant="block" height="12rem" />

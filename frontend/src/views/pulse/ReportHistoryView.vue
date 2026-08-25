@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import * as api from '../../api/pulse';
 import type { FrozenPeriodEntry } from '../../api/pulse';
 import ReportHeader from '../../components/pulse/ReportHeader.vue';
 import { PulseCard, PulseEmptyState, PulseErrorState, PulseSkeleton, PulseTable } from '../../components/ui';
+import { useSessionStore } from '../../stores/session';
 
-const TEAM = 'ceva-logistics';
+const session = useSessionStore();
 
 const history = ref<FrozenPeriodEntry[]>([]);
 const loading = ref(true);
@@ -18,10 +19,11 @@ const columns = [
 ];
 
 async function load(): Promise<void> {
+  if (!session.currentTeamSlug) return;
   loading.value = true;
   error.value = null;
   try {
-    const res = await api.getPeriodHistory(TEAM);
+    const res = await api.getPeriodHistory(session.currentTeamSlug);
     history.value = res.history;
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load report history';
@@ -38,7 +40,12 @@ const rows = () =>
     periodId: entry.period.id,
   }));
 
-onMounted(load);
+onMounted(() => {
+  if (session.loaded) void load();
+  else void session.load();
+});
+
+watch(() => session.currentTeamSlug, load);
 </script>
 
 <template>

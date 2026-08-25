@@ -1,16 +1,33 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import CompletionReportView from './CompletionReportView.vue';
 import { ApiError } from '../../api/pulse';
 
 vi.mock('../../api/pulse', async () => {
   const actual = await vi.importActual<typeof import('../../api/pulse')>('../../api/pulse');
-  return { ...actual, getCompletionReport: vi.fn() };
+  return { ...actual, getMe: vi.fn(), getCompletionReport: vi.fn() };
 });
 
+function mockMe() {
+  return {
+    id: 'user-1',
+    email: 'member@example.com',
+    profile: null,
+    isGlobalAdmin: false,
+    teams: [{ team: { id: 't1', name: 'CEVA Logistics', slug: 'ceva-logistics' }, role: 'member' }],
+  };
+}
+
 describe('CompletionReportView', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
+
   it('shows an error state with retry when the request fails', async () => {
     const api = await import('../../api/pulse');
+    (api.getMe as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockMe());
     (api.getCompletionReport as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new ApiError(500, null));
 
     const wrapper = mount(CompletionReportView);
@@ -21,6 +38,7 @@ describe('CompletionReportView', () => {
 
   it('renders completion stats and per-member status', async () => {
     const api = await import('../../api/pulse');
+    (api.getMe as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockMe());
     (api.getCompletionReport as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       period: { id: 1, isoWeek: '2026-W29', startsOn: '2026-07-13', endsOn: '2026-07-20' },
       completion: {
