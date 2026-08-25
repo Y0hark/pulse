@@ -311,7 +311,12 @@ onMounted(load);
       <PulseSkeleton variant="block" height="2.5rem" />
     </div>
 
-    <PulseErrorState v-else-if="error" description="We couldn't load users." retryable @retry="load" />
+    <PulseErrorState
+      v-else-if="error"
+      :description="`We couldn't load users. (${error})`"
+      retryable
+      @retry="load"
+    />
 
     <PulseEmptyState v-else-if="rows.length === 0" icon="👥" title="No users yet" description="Create your first user to get started.">
       <PulseButton @click="openCreate">New user</PulseButton>

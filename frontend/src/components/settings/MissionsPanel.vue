@@ -95,7 +95,12 @@ onMounted(load);
       <PulseSkeleton variant="block" height="2.5rem" />
     </div>
 
-    <PulseErrorState v-else-if="error" description="We couldn't load missions." retryable @retry="load" />
+    <PulseErrorState
+      v-else-if="error"
+      :description="`We couldn't load missions. (${error})`"
+      retryable
+      @retry="load"
+    />
 
     <PulseEmptyState
       v-else-if="filteredMissions.length === 0"
