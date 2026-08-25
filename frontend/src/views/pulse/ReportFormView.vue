@@ -92,7 +92,6 @@ function newOpportunity(): OpportunityDraft {
       editing until the period is frozen.
     </p>
     <p v-if="store.error" class="report-form__error">{{ store.error }}</p>
-    <p v-if="store.saving" class="report-form__status">Saving…</p>
 
     <section v-if="store.gamification" class="report-form__gamification">
       <StreakBadge :streak="store.gamification.streak" :xp="store.gamification.xp" :badges="store.gamification.badges" />
@@ -236,6 +235,10 @@ function newOpportunity(): OpportunityDraft {
       </PulseButton>
     </footer>
   </main>
+
+  <Transition name="report-form-autosave">
+    <p v-if="store.saving" class="report-form__autosave">Saving…</p>
+  </Transition>
 </template>
 
 <style scoped>
@@ -317,6 +320,31 @@ function newOpportunity(): OpportunityDraft {
 }
 .report-form__error {
   color: var(--color-danger);
+}
+.report-form__autosave {
+  position: fixed;
+  bottom: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  z-index: 200;
+}
+.report-form-autosave-enter-active,
+.report-form-autosave-leave-active {
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base);
+}
+.report-form-autosave-enter-from,
+.report-form-autosave-leave-to {
+  opacity: 0;
+  transform: translate(-50%, var(--space-2));
 }
 
 /* Native form controls in this view aren't wrapped by PulseInput/PulseSelect

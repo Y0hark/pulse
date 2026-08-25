@@ -102,7 +102,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside));
       />
 
       <router-link :to="{ name: 'weekly-pulse' }">
-        <PulseButton size="sm">New submission</PulseButton>
+        <PulseButton size="sm">PULSE!</PulseButton>
       </router-link>
 
       <ThemeSwitcher />
