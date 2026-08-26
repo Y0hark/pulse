@@ -10,6 +10,7 @@ export default defineConfig({
       '/teams': 'http://localhost:3000',
       '/missions': 'http://localhost:3000',
       '/users': 'http://localhost:3000',
+      '/profiles': 'http://localhost:3000',
     },
   },
   test: {

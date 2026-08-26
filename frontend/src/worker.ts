@@ -10,7 +10,7 @@ export interface Env {
 // (see vite.config.ts). Keeping the API on this Worker's own domain makes the
 // session cookie first-party, so browsers that block third-party cookies still
 // send it.
-const API_PATH_PREFIXES = ['/auth', '/me', '/teams', '/missions', '/users'];
+const API_PATH_PREFIXES = ['/auth', '/me', '/teams', '/missions', '/users', '/profiles'];
 
 function isApiPath(pathname: string): boolean {
   return API_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
